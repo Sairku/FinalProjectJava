@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: bank
+    name: facebook
 
   profiles:
     active: local # Or prod based on your environment
@@ -18,7 +18,7 @@ spring.config.activate.on-profile: local
 
 spring:
   datasource:
-    url: jdbc:h2:mem:bank
+    url: jdbc:h2:mem:facebook
     driver-class-name: org.h2.Driver
     username: sa
     password: ""
@@ -34,6 +34,12 @@ spring:
     hibernate:
       ddl-auto: update
 
+  # Flyway settings
+  flyway:
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    enabled: false # H2 2.3.232 is newer than this version of Flyway and support has not been tested. The latest supported version of H2 is 2.2.224.#
+
 # Configuration for the prod profile
 ---
 spring.config.activate.on-profile: prod
@@ -43,7 +49,7 @@ spring:
     import: optional:file:.env[.properties]
 
   datasource:
-    url: jdbc:mysql://mysql-java-hsachok-test1.g.aivencloud.com:27453/bank?sessionVariables=sql_require_primary_key=OFF
+    url: jdbc:mysql://mysql-java-hsachok-test1.g.aivencloud.com:27453/facebook?sessionVariables=sql_require_primary_key=OFF
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: avnadmin
     password: ${DB_PASSWORD}
@@ -53,3 +59,9 @@ spring:
     show-sql: true
     hibernate:
       ddl-auto: update
+
+  # Flyway settings
+  flyway:
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    enabled: true
