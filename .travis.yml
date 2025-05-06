@@ -1,0 +1,8 @@
+addons:
+  sonarcloud:
+    organization: "finalprojectjava"
+    token: 84d922b75179866cd3f93d4d93e0c71ba5756ab6
+
+script:
+  ...
+  - sonar-scanner
