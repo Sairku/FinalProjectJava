@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS users (
   birth_date date,
   avatar_url varchar(255),
   header_photo varchar(255),
+  hometown VARCHAR(255),
+  current_city VARCHAR(255),
   verified boolean NOT NULL DEFAULT false,
   created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
