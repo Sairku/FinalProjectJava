@@ -201,6 +201,7 @@ CREATE TABLE IF NOT EXISTS messages (
   sender_id bigint NOT NULL,
   receiver_id bigint NOT NULL,
   text text NOT NULL,
+  is_read boolean NOT NULL DEFAULT false,
   created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id)

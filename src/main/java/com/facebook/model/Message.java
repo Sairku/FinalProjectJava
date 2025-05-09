@@ -21,6 +21,9 @@ public class Message extends AbstractEntity {
     @NotBlank(message = "Message text is mandatory")
     private String text;
 
+    @Column(name = "is_read", columnDefinition = "boolean default false")
+    private boolean isRead;
+
     @ManyToOne
     @JoinColumn(
             name = "sender_id",
