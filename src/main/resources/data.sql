@@ -5,10 +5,10 @@ CREATE TABLE IF NOT EXISTS users (
   first_name varchar(100) NOT NULL,
   last_name varchar(100) NOT NULL,
   gender ENUM ('MALE', 'FEMALE', 'CUSTOM') NOT NULL,
-  phone_number varchar(20),
-  birth_date date,
+  phone varchar(20),
+  birthdate date,
   avatar_url varchar(255),
-  header_photo varchar(255),
+  header_photo_url varchar(255),
   verified boolean NOT NULL DEFAULT false,
   created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -24,19 +24,25 @@ CREATE TABLE IF NOT EXISTS verification_tokens (
   PRIMARY KEY (id)
 );
 
-ALTER TABLE verification_tokens ADD FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE verification_tokens 
+ADD CONSTRAINT FK_tokens_user_id FOREIGN KEY (user_id) 
+REFERENCES users (id) ON DELETE CASCADE ON UPDATE NO ACTION;
 
 CREATE TABLE IF NOT EXISTS `groups` (
   id bigint NOT NULL AUTO_INCREMENT,
   name varchar(255) NOT NULL,
   description text,
+  img_url varchar(255),
+  color varchar(7) DEFAULT '#FFFFFF',
   is_private boolean NOT NULL DEFAULT false,
   created_by bigint,
   created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id)
 );
 
-ALTER TABLE `groups` ADD FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE SET NULL ON UPDATE NO ACTION;
+ALTER TABLE `groups`
+ADD CONSTRAINT FK_groups_created_by FOREIGN KEY (created_by)
+REFERENCES users (id) ON DELETE SET NULL ON UPDATE NO ACTION;
 
 CREATE TABLE IF NOT EXISTS group_join_requests (
   id bigint NOT NULL AUTO_INCREMENT,
@@ -48,11 +54,17 @@ CREATE TABLE IF NOT EXISTS group_join_requests (
   PRIMARY KEY (id)
 );
 
-ALTER TABLE group_join_requests ADD FOREIGN KEY (group_id) REFERENCES `groups` (id) ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE group_join_requests
+ADD CONSTRAINT FK_group_requests_group_id FOREIGN KEY (group_id)
+REFERENCES `groups` (id) ON DELETE CASCADE ON UPDATE NO ACTION;
 
-ALTER TABLE group_join_requests ADD FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE group_join_requests
+ADD CONSTRAINT FK_group_requests_user_id FOREIGN KEY (user_id)
+REFERENCES users (id) ON DELETE CASCADE ON UPDATE NO ACTION;
 
-ALTER TABLE group_join_requests ADD FOREIGN KEY (initiated_by) REFERENCES users (id) ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE group_join_requests
+ADD CONSTRAINT FK_group_requests_initiated_by FOREIGN KEY (initiated_by)
+REFERENCES users (id) ON DELETE CASCADE ON UPDATE NO ACTION;
 
 CREATE TABLE IF NOT EXISTS group_members (
   id bigint NOT NULL AUTO_INCREMENT,
@@ -63,23 +75,31 @@ CREATE TABLE IF NOT EXISTS group_members (
   PRIMARY KEY (id)
 );
 
-ALTER TABLE group_members ADD FOREIGN KEY (group_id) REFERENCES `groups` (id) ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE group_members
+ADD CONSTRAINT FK_group_members_group_id FOREIGN KEY (group_id)
+REFERENCES `groups` (id) ON DELETE CASCADE ON UPDATE NO ACTION;
 
-ALTER TABLE group_members ADD FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE group_members
+ADD CONSTRAINT FK_group_members_user_id FOREIGN KEY (user_id)
+REFERENCES users (id) ON DELETE CASCADE ON UPDATE NO ACTION;
 
 CREATE TABLE IF NOT EXISTS posts (
   id bigint NOT NULL AUTO_INCREMENT,
+  description text,
   user_id bigint NOT NULL,
   group_id bigint,
-  body text COMMENT 'Content of the post',
   created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id)
 );
 
-ALTER TABLE posts ADD FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE posts
+ADD CONSTRAINT FK_posts_user_id FOREIGN KEY (user_id)
+REFERENCES users (id) ON DELETE CASCADE ON UPDATE NO ACTION;
 
-ALTER TABLE posts ADD FOREIGN KEY (group_id) REFERENCES `groups` (id) ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE posts
+ADD CONSTRAINT FK_posts_group_id FOREIGN KEY (group_id)
+REFERENCES `groups` (id) ON DELETE CASCADE ON UPDATE NO ACTION;
 
 CREATE TABLE IF NOT EXISTS post_images (
   id bigint NOT NULL AUTO_INCREMENT,
@@ -88,7 +108,9 @@ CREATE TABLE IF NOT EXISTS post_images (
   PRIMARY KEY (id)
 );
 
-ALTER TABLE post_images ADD FOREIGN KEY (post_id) REFERENCES posts (id) ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE post_images
+ADD CONSTRAINT FK_post_images_post_id FOREIGN KEY (post_id)
+REFERENCES posts (id) ON DELETE CASCADE ON UPDATE NO ACTION;
 
 CREATE TABLE IF NOT EXISTS likes (
   id bigint NOT NULL AUTO_INCREMENT,
@@ -98,23 +120,31 @@ CREATE TABLE IF NOT EXISTS likes (
   PRIMARY KEY (id)
 );
 
-ALTER TABLE likes ADD FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE likes
+ADD CONSTRAINT FK_likes_user_id FOREIGN KEY (user_id)
+REFERENCES users (id) ON DELETE CASCADE ON UPDATE NO ACTION;
 
-ALTER TABLE likes ADD FOREIGN KEY (post_id) REFERENCES posts (id) ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE likes
+ADD CONSTRAINT FK_likes_post_id FOREIGN KEY (post_id)
+REFERENCES posts (id) ON DELETE CASCADE ON UPDATE NO ACTION;
 
 CREATE TABLE IF NOT EXISTS comments (
   id bigint NOT NULL AUTO_INCREMENT,
   user_id bigint NOT NULL,
   post_id bigint NOT NULL,
-  body text NOT NULL COMMENT 'Content of the post',
+  text text NOT NULL COMMENT 'Content of the post',
   created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id)
 );
 
-ALTER TABLE comments ADD FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE comments
+ADD CONSTRAINT FK_comments_user_id FOREIGN KEY (user_id)
+REFERENCES users (id) ON DELETE CASCADE ON UPDATE NO ACTION;
 
-ALTER TABLE comments ADD FOREIGN KEY (post_id) REFERENCES posts (id) ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE comments
+ADD CONSTRAINT FK_comments_post_id FOREIGN KEY (post_id)
+REFERENCES posts (id) ON DELETE CASCADE ON UPDATE NO ACTION;
 
 CREATE TABLE IF NOT EXISTS reposts (
   id bigint NOT NULL AUTO_INCREMENT,
@@ -124,23 +154,31 @@ CREATE TABLE IF NOT EXISTS reposts (
   PRIMARY KEY (id)
 );
 
-ALTER TABLE reposts ADD FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE reposts
+ADD CONSTRAINT FK_reposts_user_id FOREIGN KEY (user_id)
+REFERENCES users (id) ON DELETE CASCADE ON UPDATE NO ACTION;
 
-ALTER TABLE reposts ADD FOREIGN KEY (post_id) REFERENCES posts (id) ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE reposts
+ADD CONSTRAINT FK_reposts_post_id FOREIGN KEY (post_id)
+REFERENCES posts (id) ON DELETE CASCADE ON UPDATE NO ACTION;
 
 CREATE TABLE IF NOT EXISTS friends (
   id bigint NOT NULL AUTO_INCREMENT,
-  sender_id bigint NOT NULL,
-  receiver_id bigint NOT NULL,
+  user_id bigint NOT NULL,
+  friend_id bigint NOT NULL,
   status ENUM ('PENDING', 'ACCEPTED', 'DECLINED') DEFAULT ('PENDING'),
   created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   accepted_at timestamp,
   PRIMARY KEY (id)
 );
 
-ALTER TABLE friends ADD FOREIGN KEY (sender_id) REFERENCES users (id);
+ALTER TABLE friends
+ADD CONSTRAINT FK_friends_user_id FOREIGN KEY (user_id)
+REFERENCES users (id);
 
-ALTER TABLE friends ADD FOREIGN KEY (receiver_id) REFERENCES users (id);
+ALTER TABLE friends
+ADD CONSTRAINT FK_friends_friend_id FOREIGN KEY (friend_id)
+REFERENCES users (id);
 
 CREATE TABLE IF NOT EXISTS followers (
   id bigint NOT NULL AUTO_INCREMENT,
@@ -150,37 +188,51 @@ CREATE TABLE IF NOT EXISTS followers (
   PRIMARY KEY (id)
 );
 
-ALTER TABLE followers ADD FOREIGN KEY (follower_id) REFERENCES users (id) ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE followers
+ADD CONSTRAINT FK_followers_follower_id FOREIGN KEY (follower_id)
+REFERENCES users (id) ON DELETE CASCADE ON UPDATE NO ACTION;
 
-ALTER TABLE followers ADD FOREIGN KEY (following_id) REFERENCES users (id) ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE followers
+ADD CONSTRAINT FK_followers_following_id FOREIGN KEY (following_id)
+REFERENCES users (id) ON DELETE CASCADE ON UPDATE NO ACTION;
 
 CREATE TABLE IF NOT EXISTS messages (
   id bigint NOT NULL AUTO_INCREMENT,
   sender_id bigint NOT NULL,
   receiver_id bigint NOT NULL,
-  body text,
+  text text NOT NULL,
   created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id)
 );
 
-ALTER TABLE messages ADD FOREIGN KEY (sender_id) REFERENCES users (id);
+ALTER TABLE messages
+ADD CONSTRAINT FK_messages_sender_id FOREIGN KEY (sender_id)
+REFERENCES users (id);
 
-ALTER TABLE messages ADD FOREIGN KEY (receiver_id) REFERENCES users (id);
+ALTER TABLE messages
+ADD CONSTRAINT FK_messages_receiver_id FOREIGN KEY (receiver_id)
+REFERENCES users (id);
 
 CREATE TABLE IF NOT EXISTS notifications (
   id bigint NOT NULL AUTO_INCREMENT,
+  type ENUM ('LIKE', 'COMMENT', 'REPOST', 'FRIEND', 'MESSAGE', 'BIRTHDAY', 'GROUP'),
+  is_read boolean NOT NULL DEFAULT false,
   user_id bigint NOT NULL,
-  type ENUM ('FRIEND', 'LIKE', 'COMMENT', 'MESSAGE', 'GROUP'),
   related_user_id bigint,
   related_post_id bigint,
-  is_read boolean NOT NULL DEFAULT false,
   created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id)
 );
 
-ALTER TABLE notifications ADD FOREIGN KEY (user_id) REFERENCES users (id);
+ALTER TABLE notifications
+ADD CONSTRAINT FK_notifications_user_id FOREIGN KEY (user_id)
+REFERENCES users (id);
 
-ALTER TABLE notifications ADD FOREIGN KEY (related_user_id) REFERENCES users (id);
+ALTER TABLE notifications
+ADD CONSTRAINT FK_notifications_related_user_id FOREIGN KEY (related_user_id)
+REFERENCES users (id);
 
-ALTER TABLE notifications ADD FOREIGN KEY (related_post_id) REFERENCES posts (id);
+ALTER TABLE notifications
+ADD CONSTRAINT FK_notifications_related_post_id FOREIGN KEY (related_post_id)
+REFERENCES posts (id);
