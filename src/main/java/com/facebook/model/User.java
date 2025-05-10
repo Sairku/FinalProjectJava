@@ -1,21 +1,66 @@
 package com.facebook.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import com.facebook.enums.Gender;
+import com.facebook.enums.Provider;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.LastModifiedDate;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
-@EqualsAndHashCode(callSuper = true)
+@NoArgsConstructor
+@AllArgsConstructor
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class User extends AbstractEntity {
-    @NotBlank(message = "User email is mandatory")
     @Column(unique = true)
+    @NotBlank(message = "Email is mandatory")
+    @Email(message = "Email should be valid")
     private String email;
 
-    @NotBlank(message = "User password is mandatory")
+    @NotBlank(message = "Password is mandatory")
     private String password;
+
+    @Column(name = "first_name")
+    @NotBlank(message = "First name is mandatory")
+    private String firstName;
+
+    @Column(name = "last_name")
+    @NotBlank(message = "Last name is mandatory")
+    private String lastName;
+
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
+
+    @Column(length = 20)
+    private String phone;
+
+    private Date birthdate;
+
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
+    @Column(name = "header_photo_url")
+    private String headerPhotoUrl;
+
+    @Column(columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private boolean verified;
+
+    @Column(name = "updated_at")
+    @LastModifiedDate
+    private LocalDateTime modifiedDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(columnDefinition = "VARCHAR(20) DEFAULT 'LOCAL'")
+    private Provider provider;
 }
