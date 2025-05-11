@@ -23,6 +23,13 @@ public class FriendService {
     private final FriendRepository friendRepository;
     private final UserRepository userRepository;
 
+    public boolean isFriend(Long userId, Long friendId) {
+        if (friendRepository.findByUserIdAndFriendId(userId, friendId).isPresent())
+            return true;
+        else
+            return friendRepository.findByUserIdAndFriendId(friendId, userId).isPresent();
+    }
+
     // User trying to get a friend (like object Friend) by his friend's id (friendId)
     public Friend getFriendById(Long friendId) {
         return friendRepository.findById(friendId)
