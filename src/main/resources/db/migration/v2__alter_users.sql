@@ -1,0 +1,5 @@
+ALTER TABLE users ADD COLUMN hometown VARCHAR(255);
+
+ALTER TABLE users ADD COLUMN current_city VARCHAR(255);
+
+ALTER TABLE users MODIFY password VARCHAR(255);

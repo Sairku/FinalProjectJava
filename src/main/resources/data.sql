@@ -1,18 +1,20 @@
 CREATE TABLE IF NOT EXISTS users (
   id bigint NOT NULL AUTO_INCREMENT,
   email varchar(255) UNIQUE NOT NULL,
-  password varchar(255) NOT NULL,
+  password varchar(255),
   first_name varchar(100) NOT NULL,
   last_name varchar(100) NOT NULL,
-  gender ENUM ('MALE', 'FEMALE', 'CUSTOM') NOT NULL,
+  gender varchar(10) NOT NULL,
   phone varchar(20),
   birthdate date,
   avatar_url varchar(255),
   header_photo_url varchar(255),
+  hometown VARCHAR(255),
+  current_city VARCHAR(255),
   verified boolean NOT NULL DEFAULT false,
   created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  provider ENUM ('LOCAL', 'GOOGLE') NOT NULL COMMENT 'For login, to know what a provider was',
+  provider varchar(20) NOT NULL DEFAULT('LOCAL'),
   PRIMARY KEY (id)
 );
 
@@ -24,8 +26,8 @@ CREATE TABLE IF NOT EXISTS verification_tokens (
   PRIMARY KEY (id)
 );
 
-ALTER TABLE verification_tokens 
-ADD CONSTRAINT FK_tokens_user_id FOREIGN KEY (user_id) 
+ALTER TABLE verification_tokens
+ADD CONSTRAINT FK_tokens_user_id FOREIGN KEY (user_id)
 REFERENCES users (id) ON DELETE CASCADE ON UPDATE NO ACTION;
 
 CREATE TABLE IF NOT EXISTS `groups` (
@@ -33,7 +35,7 @@ CREATE TABLE IF NOT EXISTS `groups` (
   name varchar(255) NOT NULL,
   description text,
   img_url varchar(255),
-  color varchar(7) DEFAULT '#FFFFFF',
+  color varchar(7) DEFAULT('#FFFFFF'),
   is_private boolean NOT NULL DEFAULT false,
   created_by bigint,
   created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -50,7 +52,7 @@ CREATE TABLE IF NOT EXISTS group_join_requests (
   user_id bigint NOT NULL COMMENT 'User to be added',
   initiated_by bigint NOT NULL COMMENT 'Could be the same if you are adding by yourself',
   created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  status ENUM ('PENDING', 'APPROVED', 'REJECTED') NOT NULL DEFAULT ('PENDING'),
+  status varchar(20) DEFAULT('PENDING'),
   PRIMARY KEY (id)
 );
 
@@ -70,7 +72,7 @@ CREATE TABLE IF NOT EXISTS group_members (
   id bigint NOT NULL AUTO_INCREMENT,
   group_id bigint NOT NULL,
   user_id bigint NOT NULL,
-  role ENUM ('ADMIN', 'MODERATOR', 'MEMBER') NOT NULL DEFAULT ('MEMBER'),
+  role varchar(20) DEFAULT 'MEMBER',
   joined_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id)
 );

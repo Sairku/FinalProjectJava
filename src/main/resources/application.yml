@@ -18,7 +18,7 @@ spring.config.activate.on-profile: local
 
 spring:
   datasource:
-    url: jdbc:h2:mem:facebook
+    url: jdbc:h2:mem:facebook;MODE=MYSQL
     driver-class-name: org.h2.Driver
     username: sa
     password: ""
@@ -33,6 +33,10 @@ spring:
     show-sql: true
     hibernate:
       ddl-auto: update
+
+  sql:
+    init:
+      mode: always
 
   # Flyway settings
   flyway:
