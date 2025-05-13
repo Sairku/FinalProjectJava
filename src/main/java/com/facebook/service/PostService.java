@@ -27,15 +27,14 @@ public class PostService {
 
         Post post = new Post();
         post.setUser(user);
-        post.setDescription(request.getDescription());
-        post.setImgUrl(request.getImgUrl());
+        // post.setImgUrl(request.getImgUrl());
         post.setCreatedDate(LocalDateTime.now());
 
         Post savedPost = postRepository.save(post);
 
         UserPostDTO userDTO = new UserPostDTO(user.getId(), user.getFirstName(), user.getLastName());
 
-        return new PostResponse(userDTO, savedPost.getDescription(), savedPost.getImgUrl(), savedPost.getCreatedDate());
+        return new PostResponse(userDTO, savedPost.getDescription(), null, savedPost.getCreatedDate());
     }
 
     public PostResponse updatePost(PostUpdateRequest request) {
@@ -46,9 +45,9 @@ public class PostService {
             post.setDescription(request.getDescription());
         }
 
-        if (request.getImgUrl() != null) {
-            post.setImgUrl(request.getImgUrl());
-        }
+//        if (request.getImgUrl() != null) {
+//            post.setImgUrl(request.getImgUrl());
+//        }
 
         Post updatedPost = postRepository.save(post);
 
@@ -58,7 +57,7 @@ public class PostService {
         return new PostResponse(
                 userDTO,
                 updatedPost.getDescription(),
-                updatedPost.getImgUrl(),
+                null, //updatedPost.getImgUrl(),
                 updatedPost.getCreatedDate()
         );
     }
