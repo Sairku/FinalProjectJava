@@ -2,6 +2,7 @@ package com.facebook.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -9,24 +10,21 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.LastModifiedDate;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 
 @Entity
-@Table(name = "posts")
+@Table(name = "comments")
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class Post extends AbstractEntity {
-    private String description;
-
-    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
-    private ArrayList<PostImage> images = new ArrayList<>();
+public class Comment extends AbstractEntity {
+    @NotBlank(message = "Comment text is mandatory")
+    private String text;
 
     @ManyToOne
     @JoinColumn(
             name = "user_id",
-            foreignKey = @ForeignKey(name = "FK_posts_user_id"),
+            foreignKey = @ForeignKey(name = "FK_comments_user_id"),
             nullable = false
     )
     @JsonIgnore
@@ -34,11 +32,12 @@ public class Post extends AbstractEntity {
 
     @ManyToOne
     @JoinColumn(
-            name = "group_id",
-            foreignKey = @ForeignKey(name = "FK_posts_group_id")
+            name = "post_id",
+            foreignKey = @ForeignKey(name = "FK_comments_post_id"),
+            nullable = false
     )
     @JsonIgnore
-    private Group group;
+    private Post post;
 
     @Column(name = "updated_at")
     @LastModifiedDate

@@ -1,5 +1,6 @@
 package com.facebook.service;
 
+import com.facebook.dto.UserAuth;
 import com.facebook.model.User;
 import com.facebook.exception.NotFoundException;
 import com.facebook.repository.UserRepository;
@@ -16,14 +17,21 @@ import java.util.ArrayList;
 public class CustomUserDetailsService implements UserDetailsService {
     private final UserRepository userRepository;
 
-    public UserDetails loadUserByEmail(String email) {
-        User user = userRepository.findByEmail(email).orElseThrow(() -> new NotFoundException("User not found"));
+    public UserAuth loadUserByEmail(String email) {
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new NotFoundException("User not found with email: " + email));
 
-        return new org.springframework.security.core.userdetails.User(user.getEmail(), user.getPassword(), new ArrayList<>());
+        return new UserAuth(user.getId(), user.getEmail(), user.getPassword(), new ArrayList<>());
     }
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return null;
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        return userRepository.findByEmail(email)
+                .map(user -> new UserAuth(
+                        user.getId(),
+                        user.getEmail(),
+                        user.getPassword(),
+                        new ArrayList<>()
+                ))
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
     }
 }

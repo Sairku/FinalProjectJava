@@ -1,5 +1,6 @@
 package com.facebook.model;
 
+import com.facebook.enums.FriendStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -9,24 +10,22 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.LastModifiedDate;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 
 @Entity
-@Table(name = "posts")
+@Table(name = "friends")
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class Post extends AbstractEntity {
-    private String description;
-
-    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
-    private ArrayList<PostImage> images = new ArrayList<>();
+public class Friend extends AbstractEntity {
+    @Enumerated(EnumType.STRING)
+    @Column(columnDefinition = "VARCHAR(20) DEFAULT 'PENDING'")
+    private FriendStatus status;
 
     @ManyToOne
     @JoinColumn(
             name = "user_id",
-            foreignKey = @ForeignKey(name = "FK_posts_user_id"),
+            foreignKey = @ForeignKey(name = "FK_friends_user_id"),
             nullable = false
     )
     @JsonIgnore
@@ -34,13 +33,14 @@ public class Post extends AbstractEntity {
 
     @ManyToOne
     @JoinColumn(
-            name = "group_id",
-            foreignKey = @ForeignKey(name = "FK_posts_group_id")
+            name = "friend_id",
+            foreignKey = @ForeignKey(name = "FK_friends_friend_id"),
+            nullable = false
     )
     @JsonIgnore
-    private Group group;
+    private User friend;
 
-    @Column(name = "updated_at")
+    @Column(name = "accepted_at")
     @LastModifiedDate
-    private LocalDateTime modifiedDate;
+    private LocalDateTime acceptedDate;
 }
