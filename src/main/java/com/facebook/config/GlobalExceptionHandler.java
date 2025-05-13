@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<Map<String, String>> handleConstraintViolationException(ConstraintViolationException ex) {
+    public ResponseEntity<Object> handleConstraintViolationException(ConstraintViolationException ex) {
         log.warn("Constraint violation exception [ConstraintViolationException]: {}", ex.getMessage());
 
         Map<String, String> errors = ex.getConstraintViolations().stream()
@@ -28,11 +28,11 @@ public class GlobalExceptionHandler {
                         violation -> violation.getPropertyPath().toString(),
                         ConstraintViolation::getMessage
                 ));
-        return ResponseEntity.badRequest().body(errors);
+        return ResponseHandler.generateResponse(HttpStatus.BAD_REQUEST, true, "Validation failed", errors);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
+    public ResponseEntity<Object> handleValidationExceptions(MethodArgumentNotValidException ex) {
         log.warn("Validation exception [MethodArgumentNotValidException]: {}", ex.getMessage());
 
         Map<String, String> errors = new HashMap<>();
@@ -41,7 +41,8 @@ public class GlobalExceptionHandler {
             String errorMessage = error.getDefaultMessage();
             errors.put(fieldName, errorMessage);
         });
-        return ResponseEntity.badRequest().body(errors);
+
+        return ResponseHandler.generateResponse(HttpStatus.BAD_REQUEST, true, "Validation failed", errors);
     }
 
     @ExceptionHandler(NotFoundException.class)
