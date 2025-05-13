@@ -10,10 +10,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PostCreateRequest {
-    @NotNull
+    @NotNull(message = "User id is required")
     private Long userId;
 
-    @NotBlank
+    @NotBlank(message = "Description is required")
     private String description;
 
     private String imgUrl;
