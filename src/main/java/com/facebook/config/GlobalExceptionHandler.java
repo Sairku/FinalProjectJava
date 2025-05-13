@@ -1,7 +1,9 @@
 package com.facebook.config;
 
+import com.facebook.exception.InvalidTokenException;
 import com.facebook.exception.NotFoundException;
 import com.facebook.util.ResponseHandler;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
@@ -46,10 +48,24 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<Object> handleException(NotFoundException e) {
+    public ResponseEntity<Object> handleNotFoundException(NotFoundException e) {
         log.warn("Not found exception [NotFoundException]: {}", e.getMessage());
 
         return ResponseHandler.generateResponse(HttpStatus.NOT_FOUND, true, e.getMessage(), null);
+    }
+
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<Object> handleInvalidTokenException(InvalidTokenException e) {
+        log.warn("Invalid token exception [InvalidTokenException]: {}", e.getMessage());
+
+        return ResponseHandler.generateResponse(HttpStatus.UNAUTHORIZED, true, e.getMessage(), null);
+    }
+
+    @ExceptionHandler(InvalidFormatException.class)
+    public ResponseEntity<Object> handleInvalidFormatException(InvalidFormatException e) {
+        log.warn("Invalid format exception [InvalidFormatException]: {}", e.getMessage());
+
+        return ResponseHandler.generateResponse(HttpStatus.BAD_REQUEST, true, e.getMessage(), null);
     }
 
     @ExceptionHandler(Exception.class)
