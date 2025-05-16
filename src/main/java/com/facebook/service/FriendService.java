@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -48,6 +49,14 @@ public class FriendService {
     // Get all friends (like object Friend) of a user with 'userId'
     public List<Friend> getAllFriends(Long userId) {
         return friendRepository.findByStatusAndUserId(FriendStatus.ACCEPTED, userId);
+    }
+
+    // Get all friends (like object User) of a user with 'userId'
+    public List<User> getAllFriendUsers(Long userId) {
+        return friendRepository.findByStatusAndUserId(FriendStatus.ACCEPTED, userId)
+                .stream()
+                .map(Friend::getFriend)
+                .toList();
     }
 
     // Get all friends (like object Friend) to whom the user with 'userId' sent a request but not yet accepted
@@ -226,5 +235,28 @@ public class FriendService {
                 "Friend deleted",
                 null
         );
+    }
+
+    public List<User> getRecommendedFriends(Long userId) {
+        List<User> friends = getAllUsersWhoAreFriends(userId);
+
+        List<User> result = new ArrayList<>();
+        boolean enough = false;
+
+        for (User friend : friends) {
+            List<User> friendsOfFriend = getAllUsersWhoAreFriends(friend.getId());
+            for (User friendOfFriend : friendsOfFriend){
+                if (friendOfFriend.getId() != userId && !result.contains(friendOfFriend) && !friends.contains(friendOfFriend))
+                    result.add(friendOfFriend);
+                if (result.size() >= 40)
+                    enough = true;
+                if (enough)
+                    break;
+            }
+            if (enough)
+                break;
+        }
+
+        return result;
     }
 }
