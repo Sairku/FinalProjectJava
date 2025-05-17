@@ -68,11 +68,24 @@ public class FriendController {
                                                          @PathVariable Long friendId,
                                                          @PathVariable String status) {
         log.info("Responding to friend request with ID: {}", friendId);
-        return friendService.responseToFriendRequest(
-                userId,
-                friendId,
-                status.equals("accept") ? FriendStatus.ACCEPTED : FriendStatus.DECLINED
-        );
+        return switch (status) {
+            case "accept" -> friendService.responseToFriendRequest(
+                    userId,
+                    friendId,
+                    FriendStatus.ACCEPTED
+            );
+            case "decline" -> friendService.responseToFriendRequest(
+                    userId,
+                    friendId,
+                    FriendStatus.DECLINED
+            );
+            default -> ResponseHandler.generateResponse(
+                    HttpStatus.BAD_REQUEST,
+                    true,
+                    "Invalid status",
+                    null
+            );
+        };
     }
 
     @DeleteMapping("/delete")
@@ -92,6 +105,12 @@ public class FriendController {
     public ResponseEntity<List<User>> getFriends(@PathVariable Long userId) {
         log.info("Getting friends for user with ID: {}", userId);
         return ResponseEntity.ok(friendService.getAllFriendUsers(userId));
+    }
+
+    @GetMapping("/{userId}/get-requests")
+    public ResponseEntity<List<User>> getRequests(@PathVariable Long userId) {
+        log.info("Getting friends for user with ID: {}", userId);
+        return ResponseEntity.ok(friendService.getAllUsersWhoHaveNotYetAccepted(userId));
     }
 
     @GetMapping("/{userId}/recommended")
