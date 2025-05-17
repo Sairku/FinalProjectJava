@@ -15,7 +15,7 @@ public class JwtUtil {
 
     @Autowired
     public JwtUtil(Dotenv dotenv) {
-        secretKey = dotenv.get("JWT_TOKEN_SECRET");
+        secretKey = dotenv.get("JWT_TOKEN_SECRET", System.getenv("JWT_TOKEN_SECRET"));
     }
 
     public String generateToken(String username) {

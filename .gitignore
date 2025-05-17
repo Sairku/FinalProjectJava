@@ -12,6 +12,8 @@ target/
 mvnw
 mvnw.cmd
 .mvn/wrapper/**
+### Needs for deployment ###
+!.mvn/wrapper/maven-wrapper.jar
 
 ### STS ###
 .apt_generated
