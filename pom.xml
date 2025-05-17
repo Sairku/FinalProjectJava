@@ -10,7 +10,7 @@
     </parent>
     <groupId>com</groupId>
     <artifactId>facebook</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+<!--    <version>0.0.1-SNAPSHOT</version>-->
     <name>facebook</name>
     <description>Facebook project for Spring Boot</description>
     <url/>

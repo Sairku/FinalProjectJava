@@ -1,0 +1,47 @@
+# flyctl launch added from .gitignore
+**\HELP.md
+**\target
+!**\**\src\main\**\target
+!**\**\src\test\**\target
+**\.env
+
+### Maven Wrapper ###
+### Remove the following lines if you want to include the Maven wrapper in your repository ###
+### Maven wrapper allows you to run Maven without having it installed ###
+### mvnw.cmd is for Windows and mvnw is for Unix/macOS, these scripts call the Maven Wrapper ###
+### .mvn/wrapper is the directory where the Maven wrapper files are stored ###
+**\mvnw.cmd
+
+### STS ###
+**\.apt_generated
+**\.classpath
+**\.factorypath
+**\.project
+**\.settings
+**\.springBeans
+**\.sts4-cache
+
+### IntelliJ IDEA ###
+**\.idea
+**\*.iws
+**\*.iml
+**\*.ipr
+
+### NetBeans ###
+nbproject\private
+nbbuild
+dist
+nbdist
+.nb-gradle
+**\build
+!**\**\src\main\**\build
+!**\**\src\test\**\build
+
+### VS Code ###
+**\.vscode
+
+# flyctl launch added from .idea\.gitignore
+# Default ignored files
+.idea\shelf
+.idea\workspace.xml
+fly.toml

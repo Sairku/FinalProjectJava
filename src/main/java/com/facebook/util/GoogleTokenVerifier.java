@@ -15,7 +15,7 @@ public class GoogleTokenVerifier {
     private final GoogleIdTokenVerifier verifier;
 
     public GoogleTokenVerifier(Dotenv dotenv) throws Exception {
-        String clientId = dotenv.get("GOOGLE_CLIENT_ID");
+        String clientId = dotenv.get("GOOGLE_CLIENT_ID", System.getenv("GOOGLE_CLIENT_ID"));
 
         verifier = new GoogleIdTokenVerifier.Builder(
                 GoogleNetHttpTransport.newTrustedTransport(),
