@@ -37,15 +37,15 @@ public class GroupService {
         User maybeUser =  userRepository.findById(groupCreateRequest.getOwnerId())
                 .orElseThrow(()-> new NotFoundException("No user with Id: "+groupCreateRequest.getOwnerId()));
         maybeGroup.setOwner(maybeUser);
-        maybeGroup = groupRepository.save(maybeGroup);
-        addUserToGroup(
-                new GroupAddRequest(
-                        maybeGroup.getId(),
-                        maybeGroup.getOwner().getId(),
-                        maybeGroup.getOwner().getId()
-                )
-        );
-        return modelMapper.map(maybeGroup, GroupResponse.class);
+        Group groupSaved = groupRepository.save(maybeGroup);
+        GroupMember groupMember = new GroupMember();
+        groupMember.setGroup(groupSaved);
+        groupMember.setUser(maybeUser);
+        groupMember.setRole(GroupRole.ADMIN);
+
+        groupMemberRepository.save(groupMember);
+
+        return modelMapper.map(groupSaved, GroupResponse.class);
     }
 
     public GroupResponse update(Long groupId, GroupUpdateRequest updateRequest) {
