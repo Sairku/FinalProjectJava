@@ -43,7 +43,7 @@ public class GroupController {
     public ResponseEntity<?> addUserToGroup(@Validated @RequestBody GroupAddRequest addRequest) {
         groupService.addUserToGroup(addRequest);
         boolean whileCreating = addRequest.getUserId().equals(addRequest.getInitiatedBy());
-        boolean privateCondition = groupService.findById(addRequest.getGroupId()).getPrivateGroup();
+        boolean privateCondition = groupService.findById(addRequest.getGroupId()).isPrivateGroup();
         String message;
         if(!whileCreating)
             if(privateCondition)

@@ -34,11 +34,10 @@ public class GroupService {
     public GroupResponse create(GroupCreateRequest groupCreateRequest) {
         Group maybeGroup = modelMapper.map(groupCreateRequest, Group.class);
         maybeGroup.setId(null);
-        maybeGroup.setOwner(userRepository.findById(groupCreateRequest.getOwnerId())
-                .orElseThrow(()-> new NotFoundException("No user with Id: "+groupCreateRequest.getOwnerId())));
-        groupRepository.save(maybeGroup);
         User maybeUser =  userRepository.findById(groupCreateRequest.getOwnerId())
-                .orElseThrow(()->new NotFoundException("User doesn't found"));
+                .orElseThrow(()-> new NotFoundException("No user with Id: "+groupCreateRequest.getOwnerId()));
+        maybeGroup.setOwner(maybeUser);
+        groupRepository.save(maybeGroup);
         maybeGroup = groupRepository.findByNameAndPrivateGroupAndOwner(
                 groupCreateRequest.getName(),
                 groupCreateRequest.getIsPrivate(),
