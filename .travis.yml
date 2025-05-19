@@ -1,6 +1,5 @@
 after_success:
   - mvn clean test jacoco:report coveralls:report
-
 #addons:
 #  sonarcloud:
 #    organization: "finalprojectjava"
