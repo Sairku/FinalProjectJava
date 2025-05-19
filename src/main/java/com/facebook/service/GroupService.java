@@ -104,7 +104,7 @@ public class GroupService {
             Long groupOwnerId = group.getOwner().getId();
             boolean whileCreating = (groupOwnerId.equals(addRequest.getInitiatedBy())
                     && groupOwnerId.equals(addRequest.getUserId()));
-            if (!group.getPrivateGroup() || whileCreating) {
+            if (!group.isPrivateGroup() || whileCreating) {
                 // Публічна група/створення групи - додаємо одразу
                 GroupMember newMember = new GroupMember();
                 newMember.setGroup(group);
