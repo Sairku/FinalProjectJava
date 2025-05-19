@@ -37,12 +37,7 @@ public class GroupService {
         User maybeUser =  userRepository.findById(groupCreateRequest.getOwnerId())
                 .orElseThrow(()-> new NotFoundException("No user with Id: "+groupCreateRequest.getOwnerId()));
         maybeGroup.setOwner(maybeUser);
-        groupRepository.save(maybeGroup);
-        maybeGroup = groupRepository.findByNameAndPrivateGroupAndOwner(
-                groupCreateRequest.getName(),
-                groupCreateRequest.getIsPrivate(),
-                maybeUser)
-                .orElseThrow(()-> new NotFoundException("No group with name: "+groupCreateRequest.getName()));
+        maybeGroup = groupRepository.save(maybeGroup);
         addUserToGroup(
                 new GroupAddRequest(
                         maybeGroup.getId(),
