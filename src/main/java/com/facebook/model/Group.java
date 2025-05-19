@@ -30,7 +30,7 @@ public class Group extends AbstractEntity {
             name="is_private",
             columnDefinition = "BOOLEAN DEFAULT FALSE"
     )
-    private boolean isPrivate;
+    private Boolean privateGroup;
 
     @ManyToOne
     @JoinColumn(

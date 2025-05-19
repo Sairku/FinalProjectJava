@@ -1,8 +1,7 @@
 package com.facebook.controller;
 
-import com.facebook.dto.GroupCreateRequest;
-import com.facebook.dto.GroupUpdateRequest;
-import com.facebook.dto.GroupResponse;
+import com.facebook.dto.*;
+import com.facebook.enums.GroupJoinStatus;
 import com.facebook.service.GroupService;
 import com.facebook.util.ResponseHandler;
 import lombok.AllArgsConstructor;
@@ -34,8 +33,35 @@ public class GroupController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteGroup(@PathVariable Long id) {
-        groupService.delete(id);
+    public ResponseEntity<?> deleteGroup(@PathVariable Long id,
+                                         @Validated @RequestBody GroupDeleteRequest deleteRequest) {
+        groupService.delete(id, deleteRequest);
         return ResponseHandler.generateResponse(HttpStatus.OK, false, "Group was deleted", null);
+    }
+
+    @PostMapping("/add")
+    public ResponseEntity<?> addUserToGroup(@Validated @RequestBody GroupAddRequest addRequest) {
+        groupService.addUserToGroup(addRequest);
+        boolean whileCreating = addRequest.getUserId().equals(addRequest.getInitiatedBy());
+        boolean privateCondition = groupService.findById(addRequest.getGroupId()).getPrivateGroup();
+        String message;
+        if(!whileCreating)
+            if(privateCondition)
+                message =  "Request for adding was sent from user with Id "+addRequest.getGroupId();
+            else
+                message = "User with Id "+addRequest.getUserId() +" was added to the group "+addRequest.getGroupId();
+        else
+            message = "User with Id "+addRequest.getUserId() +" created the group "+addRequest.getGroupId();
+        return ResponseHandler.generateResponse(HttpStatus.OK, false, message, null);
+    }
+
+    @PutMapping("/respond")
+    public ResponseEntity<?> respondToGroup(@Validated @RequestBody GroupRespondRequest respondRequest) {
+        groupService.respondToAddingRequest(respondRequest);
+        boolean status = respondRequest.getStatus().equals(GroupJoinStatus.APPROVED);
+        String message = status ?
+                "User with Id "+respondRequest.getUserId() +" was added to the group " + respondRequest.getGroupId() :
+                "User with Id "+respondRequest.getUserId() +" was rejected to join tyo the group " + respondRequest.getGroupId();
+        return ResponseHandler.generateResponse(HttpStatus.OK, false, message, null);
     }
 }
