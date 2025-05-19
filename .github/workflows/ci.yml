@@ -1,0 +1,37 @@
+name: Java CI with Maven and Coveralls
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Build and test with coverage
+        run: mvn clean verify
+
+      - name: Upload coverage to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
