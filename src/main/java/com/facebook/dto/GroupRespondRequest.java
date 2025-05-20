@@ -22,10 +22,6 @@ public class GroupRespondRequest {
     @Positive(message = "User's Id must be positive")
     private Long userId;
 
-    @NotNull(message = "Initiator's Id is required")
-    @Positive(message = "Initiator's Id must be positive")
-    private Long initiatedBy;
-
     @NotNull(message = "Status is required")
     private GroupJoinStatus status;
 }

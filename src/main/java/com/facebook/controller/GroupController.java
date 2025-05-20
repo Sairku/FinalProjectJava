@@ -42,16 +42,12 @@ public class GroupController {
     @PostMapping("/add")
     public ResponseEntity<?> addUserToGroup(@Validated @RequestBody GroupAddRequest addRequest) {
         groupService.addUserToGroup(addRequest);
-        boolean whileCreating = addRequest.getUserId().equals(addRequest.getInitiatedBy());
-        boolean privateCondition = groupService.findById(addRequest.getGroupId()).isPrivateGroup();
+        boolean privateCondition = groupService.findById(addRequest.getGroupId()).isPrivate();
         String message;
-        if(!whileCreating)
-            if(privateCondition)
-                message =  "Request for adding was sent from user with Id "+addRequest.getGroupId();
-            else
-                message = "User with Id "+addRequest.getUserId() +" was added to the group "+addRequest.getGroupId();
+        if (privateCondition)
+            message =  "Request for adding to the group " + addRequest.getGroupId()+ " was sent from user with Id "+addRequest.getUserId();
         else
-            message = "User with Id "+addRequest.getUserId() +" created the group "+addRequest.getGroupId();
+            message = "User with Id "+addRequest.getUserId() +" was added to the group "+addRequest.getGroupId();
         return ResponseHandler.generateResponse(HttpStatus.OK, false, message, null);
     }
 
@@ -61,7 +57,7 @@ public class GroupController {
         boolean status = respondRequest.getStatus().equals(GroupJoinStatus.APPROVED);
         String message = status ?
                 "User with Id "+respondRequest.getUserId() +" was added to the group " + respondRequest.getGroupId() :
-                "User with Id "+respondRequest.getUserId() +" was rejected to join tyo the group " + respondRequest.getGroupId();
+                "User with Id "+respondRequest.getUserId() +" was rejected to join to the group " + respondRequest.getGroupId();
         return ResponseHandler.generateResponse(HttpStatus.OK, false, message, null);
     }
 }
