@@ -102,7 +102,6 @@ public class AuthController {
 
         LoginResponseDto registerResponse = authService.register(registerRequest);
 
-        System.out.println("registerResponse = " + registerResponse);
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(registerRequest.getEmail(), registerRequest.getPassword())
         );
