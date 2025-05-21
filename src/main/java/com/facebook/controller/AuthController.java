@@ -1,6 +1,7 @@
 package com.facebook.controller;
 
 import com.facebook.dto.*;
+import com.facebook.enums.Provider;
 import com.facebook.service.AuthService;
 import com.facebook.service.CustomUserDetailsService;
 import com.facebook.util.GoogleTokenVerifier;
@@ -32,11 +33,11 @@ public class AuthController {
     private final GoogleTokenVerifier googleTokenVerifier;
 
     @PostMapping("/google")
-    public ResponseEntity<?> googleLogin(@RequestBody @Validated GoogleRequest googleRequest) {
-        LoginResponse loginResponse;
+    public ResponseEntity<?> googleLogin(@RequestBody @Validated GoogleRequestDto googleRequestDto) {
+        LoginResponseDto loginResponseDto;
 
         try {
-            GoogleIdToken.Payload payload = googleTokenVerifier.verify(googleRequest.getIdToken());
+            GoogleIdToken.Payload payload = googleTokenVerifier.verify(googleRequestDto.getIdToken());
             String email = payload.getEmail();
 
             if (email == null) {
@@ -54,16 +55,16 @@ public class AuthController {
                 String firstName = (String) payload.get("given_name");
                 String lastName = (String) payload.get("family_name");
 
-                googleRequest.setFirstName(firstName);
-                googleRequest.setLastName(lastName);
+                googleRequestDto.setFirstName(firstName);
+                googleRequestDto.setLastName(lastName);
 
-                loginResponse = authService.registerGoogleUser(googleRequest);
+                loginResponseDto = authService.registerGoogleUser(googleRequestDto);
             } else {
-                UserAuth userDetails = userDetailsService.loadUserByEmail(email);
+                UserAuthDto userDetails = userDetailsService.loadUserByEmail(email);
 
-                loginResponse = new LoginResponse();
-                loginResponse.setUserId(userDetails.getId());
-                loginResponse.setEmail(email);
+                loginResponseDto = new LoginResponseDto();
+                loginResponseDto.setUserId(userDetails.getId());
+                loginResponseDto.setEmail(email);
             }
 
             Authentication authentication = authenticationManager.authenticate(
@@ -71,7 +72,7 @@ public class AuthController {
             );
             String jwtToken = jwtUtil.generateToken(email);
 
-            loginResponse.setToken(jwtToken);
+            loginResponseDto.setToken(jwtToken);
 
             log.info("User with email {} logged in via Google successfully", email);
         } catch (Exception e) {
@@ -82,12 +83,12 @@ public class AuthController {
                 HttpStatus.OK,
                 false,
                 "User logged in via Google successfully",
-                loginResponse
+                loginResponseDto
         );
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody @Validated RegisterRequest registerRequest) {
+    public ResponseEntity<?> register(@RequestBody @Validated RegisterRequestDto registerRequest) {
         if (authService.userByEmailExists(registerRequest.getEmail())) {
             log.info("User with email: {} can't be created. It already exists.", registerRequest.getEmail());
 
@@ -99,7 +100,7 @@ public class AuthController {
             );
         }
 
-        LoginResponse registerResponse = authService.register(registerRequest);
+        LoginResponseDto registerResponse = authService.register(registerRequest);
 
         System.out.println("registerResponse = " + registerResponse);
         Authentication authentication = authenticationManager.authenticate(
@@ -120,10 +121,23 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody @Validated LoginRequest loginRequest) {
-        UserAuth userDetails = userDetailsService.loadUserByEmail(loginRequest.getEmail());
+    public ResponseEntity<?> login(@RequestBody @Validated LoginRequestDto loginRequestDto) {
+        UserAuthDto userDetails = userDetailsService.loadUserByEmail(loginRequestDto.getEmail());
 
-        if (!authService.isValidPassword(loginRequest.getPassword(), userDetails.getPassword())) {
+        if (userDetails.getProvider().equals(Provider.GOOGLE)) {
+            String message = "User with email: " + userDetails.getUsername() + " can't login. User registered via Google";
+
+            log.info(message);
+
+            return ResponseHandler.generateResponse(
+                    HttpStatus.UNAUTHORIZED,
+                    true,
+                    message,
+                    null
+            );
+        }
+
+        if (!authService.isValidPassword(loginRequestDto.getPassword(), userDetails.getPassword())) {
             log.info("Invalid password for user with email: {}", userDetails.getUsername());
 
             return ResponseHandler.generateResponse(
@@ -135,7 +149,7 @@ public class AuthController {
         }
 
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(userDetails.getUsername(), loginRequest.getPassword())
+                new UsernamePasswordAuthenticationToken(userDetails.getUsername(), loginRequestDto.getPassword())
         );
         String jwtToken = jwtUtil.generateToken(userDetails.getUsername());
 
@@ -145,7 +159,7 @@ public class AuthController {
                 HttpStatus.OK,
                 false,
                 "User logged in successfully",
-                new LoginResponse(userDetails.getId(), userDetails.getUsername(), jwtToken)
+                new LoginResponseDto(userDetails.getId(), userDetails.getUsername(), jwtToken)
         );
     }
 }

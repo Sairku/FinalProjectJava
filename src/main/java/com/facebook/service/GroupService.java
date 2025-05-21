@@ -155,23 +155,23 @@ public class GroupService {
 
     }
 
-    public List<UserShortInfo> getGroupMembers(long groupId) {
+    public List<UserShortDto> getGroupMembers(long groupId) {
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new NotFoundException("Group with id " + groupId + " not found"));
         List<GroupMember> members = groupMemberRepository.findByGroupId(groupId)
                 .orElseThrow(() -> new NotFoundException("No members found for this group"));
         return members.stream()
-                .map(member -> modelMapper.map(member.getUser(), UserShortInfo.class))
+                .map(member -> modelMapper.map(member.getUser(), UserShortDto.class))
                 .toList();
     }
 
-    public List<UserShortInfo> getGroupRequest(long groupId) {
+    public List<UserShortDto> getGroupRequest(long groupId) {
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new NotFoundException("Group with id " + groupId + " not found"));
         List<GroupJoinRequest> requests = groupJoinRequestRepository.findByGroupId(groupId)
                 .orElseThrow(() -> new NotFoundException("No requests found for this group"));
         return requests.stream()
-                .map(request -> modelMapper.map(request.getUser(), UserShortInfo.class))
+                .map(request -> modelMapper.map(request.getUser(), UserShortDto.class))
                 .toList();
     }
 

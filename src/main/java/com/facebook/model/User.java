@@ -12,9 +12,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.LastModifiedDate;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -52,6 +50,12 @@ public class User extends AbstractEntity {
 
     @Column(name = "header_photo_url")
     private String headerPhotoUrl;
+
+    @Column(name = "home_city")
+    private String homeCity;
+
+    @Column(name = "current_city")
+    private String currentCity;
 
     @Column(columnDefinition = "BOOLEAN DEFAULT FALSE")
     private boolean verified;

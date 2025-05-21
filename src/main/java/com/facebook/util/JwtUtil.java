@@ -19,7 +19,12 @@ public class JwtUtil {
     }
 
     public String generateToken(String username) {
-        return createToken(username);
+        return Jwts.builder()
+                .setSubject(username)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24))
+                .signWith(io.jsonwebtoken.SignatureAlgorithm.HS256, getSecretKey())
+                .compact();
     }
 
     public String extractUsername(String token) {
@@ -32,15 +37,6 @@ public class JwtUtil {
 
     private byte[] getSecretKey() {
         return Base64.getUrlDecoder().decode(secretKey);
-    }
-
-    private String createToken(String username) {
-        return Jwts.builder()
-                .setSubject(username)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24))
-                .signWith(io.jsonwebtoken.SignatureAlgorithm.HS256, getSecretKey())
-                .compact();
     }
 
     private Claims extractAllClaims(String token) {
