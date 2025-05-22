@@ -1,8 +1,8 @@
 package com.facebook.service;
 
-import com.facebook.dto.GoogleRequest;
-import com.facebook.dto.LoginResponse;
-import com.facebook.dto.RegisterRequest;
+import com.facebook.dto.GoogleRequestDto;
+import com.facebook.dto.LoginResponseDto;
+import com.facebook.dto.RegisterRequestDto;
 import com.facebook.enums.Provider;
 import com.facebook.model.User;
 import com.facebook.repository.UserRepository;
@@ -20,7 +20,7 @@ public class AuthService {
     private final ModelMapper modelMapper;
     private final PasswordEncoder passwordEncoder;
 
-    public LoginResponse register(RegisterRequest registerRequest) {
+    public LoginResponseDto register(RegisterRequestDto registerRequest) {
         User user = modelMapper.map(registerRequest, User.class);
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
@@ -28,21 +28,21 @@ public class AuthService {
 
         User savedUser = userRepository.save(user);
 
-        return modelMapper.map(savedUser, LoginResponse.class);
+        return modelMapper.map(savedUser, LoginResponseDto.class);
     }
 
-    public LoginResponse registerGoogleUser(GoogleRequest googleRequest) {
-        User user = modelMapper.map(googleRequest, User.class);
+    public LoginResponseDto registerGoogleUser(GoogleRequestDto googleRequestDto) {
+        User user = modelMapper.map(googleRequestDto, User.class);
 
         user.setProvider(Provider.GOOGLE);
 
         User savedUser = userRepository.save(user);
-        LoginResponse loginResponse = new LoginResponse();
+        LoginResponseDto loginResponseDto = new LoginResponseDto();
 
-        loginResponse.setUserId(savedUser.getId());
-        loginResponse.setEmail(savedUser.getEmail());
+        loginResponseDto.setUserId(savedUser.getId());
+        loginResponseDto.setEmail(savedUser.getEmail());
 
-        return loginResponse;
+        return loginResponseDto;
     }
 
     public boolean userByEmailExists(String email) {

@@ -1,11 +1,10 @@
 package com.facebook.service;
 
-import com.facebook.dto.UserAuth;
+import com.facebook.dto.UserAuthDto;
 import com.facebook.model.User;
 import com.facebook.exception.NotFoundException;
 import com.facebook.repository.UserRepository;
 import lombok.AllArgsConstructor;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -17,19 +16,26 @@ import java.util.ArrayList;
 public class CustomUserDetailsService implements UserDetailsService {
     private final UserRepository userRepository;
 
-    public UserAuth loadUserByEmail(String email) {
+    public UserAuthDto loadUserByEmail(String email) {
         User user = userRepository.findByEmail(email).orElseThrow(() -> new NotFoundException("User not found with email: " + email));
 
-        return new UserAuth(user.getId(), user.getEmail(), user.getPassword(), new ArrayList<>());
+        return new UserAuthDto(
+                user.getId(),
+                user.getEmail(),
+                user.getPassword(),
+                user.getProvider(),
+                new ArrayList<>()
+        );
     }
 
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+    public UserAuthDto loadUserByUsername(String email) throws UsernameNotFoundException {
         return userRepository.findByEmail(email)
-                .map(user -> new UserAuth(
+                .map(user -> new UserAuthDto(
                         user.getId(),
                         user.getEmail(),
                         user.getPassword(),
+                        user.getProvider(),
                         new ArrayList<>()
                 ))
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));

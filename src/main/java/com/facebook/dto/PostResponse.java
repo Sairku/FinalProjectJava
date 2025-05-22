@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PostResponse {
-    private UserPostDTO user;
+    private UserShortDto user;
     private String description;
     private String imgUrl;
     private LocalDateTime createdDate;

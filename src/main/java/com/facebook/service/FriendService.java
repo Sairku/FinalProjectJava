@@ -164,6 +164,11 @@ public class FriendService {
         if (status == FriendStatus.ACCEPTED) {
             existingRequest.get().setStatus(FriendStatus.ACCEPTED);
             friendRepository.save(existingRequest.get());
+
+            // Create a reciprocal friend request
+            Friend reciprocalRequest = new Friend(FriendStatus.ACCEPTED, existingRequest.get().getFriend(), existingRequest.get().getUser(), null);
+            friendRepository.save(reciprocalRequest);
+
             log.info("Friend request from user {} to user {} accepted", userId, friendId);
             return ResponseHandler.generateResponse(
                     HttpStatus.OK,

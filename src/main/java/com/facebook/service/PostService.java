@@ -1,9 +1,6 @@
 package com.facebook.service;
 
-import com.facebook.dto.PostCreateRequest;
-import com.facebook.dto.PostResponse;
-import com.facebook.dto.PostUpdateRequest;
-import com.facebook.dto.UserPostDTO;
+import com.facebook.dto.*;
 import com.facebook.model.Post;
 import com.facebook.model.User;
 import com.facebook.repository.PostRepository;
@@ -32,7 +29,7 @@ public class PostService {
 
         Post savedPost = postRepository.save(post);
 
-        UserPostDTO userDTO = new UserPostDTO(user.getId(), user.getFirstName(), user.getLastName());
+        UserShortDto userDTO = new UserShortDto(user.getId(), user.getFirstName(), user.getLastName());
 
         return new PostResponse(userDTO, savedPost.getDescription(), null, savedPost.getCreatedDate());
     }
@@ -52,7 +49,7 @@ public class PostService {
         Post updatedPost = postRepository.save(post);
 
         User user = updatedPost.getUser();
-        UserPostDTO userDTO = new UserPostDTO(user.getId(), user.getFirstName(), user.getLastName());
+        UserShortDto userDTO = new UserShortDto(user.getId(), user.getFirstName(), user.getLastName());
 
         return new PostResponse(
                 userDTO,
