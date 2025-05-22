@@ -1,6 +1,5 @@
 package com.facebook.service;
 
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import com.facebook.dto.*;
@@ -38,11 +37,14 @@ public class GroupService {
         long ownerId = groupCreateRequest.getOwnerId();
         modelMapper.typeMap(GroupCreateRequest.class, Group.class)
                 .addMappings(m -> m.skip(Group::setId));
+
         Group maybeGroup = modelMapper.map(groupCreateRequest, Group.class);
         User maybeUser = userRepository.findById(ownerId)
                 .orElseThrow(()->new NotFoundException("No user with ID: "+ ownerId));
+
         maybeGroup.setOwner(maybeUser);
         Group groupSaved = groupRepository.save(maybeGroup);
+
         GroupMember groupMember = new GroupMember();
         groupMember.setGroup(groupSaved);
         groupMember.setUser(maybeUser);
@@ -80,79 +82,90 @@ public class GroupService {
             throw new NotFoundException("Group with id "+id+" not found");
         else if(!Objects.equals(maybeGroup.get().getOwner().getId(), deleteRequest.getOwnerId()))
             throw new RuntimeException("You are not owner of this group");
-        else
-            groupRepository.deleteById(id);
+
+        groupRepository.deleteById(id);
     }
 
     public void addUserToGroup(GroupAddRequest addRequest) {
-        Optional<Group> maybeGroup = groupRepository.findById(addRequest.getGroupId());
-        if(maybeGroup.isEmpty())
-            throw new NotFoundException("Group with id "+addRequest.getGroupId()+" not found");
-        else{
-            Group group = maybeGroup.get();
-            Optional<List<GroupMember>> maybeGroupMembers = groupMemberRepository.findByGroupId(addRequest.getGroupId());
+        long groupId = addRequest.getGroupId();
+        long userId = addRequest.getUserId();
 
-            boolean userAlreadyInGroup = maybeGroupMembers
-                    .map(list -> list.stream()
-                            .anyMatch(member -> member.getUser().getId().equals(addRequest.getUserId())))
-                    .orElse(false);
+        Group group = groupRepository.findById(groupId).orElseThrow(
+                () -> new NotFoundException("Group with id " + groupId + " not found"));
 
-            if (userAlreadyInGroup) {
-                throw new RuntimeException("User with Id " + addRequest.getUserId() + " is already a member of this group");
-            }
-            Long groupOwnerId = group.getOwner().getId();
-            boolean whileCreating = (groupOwnerId.equals(addRequest.getInitiatedBy())
-                    && groupOwnerId.equals(addRequest.getUserId()));
-            if (!group.isPrivate() || whileCreating) {
-                // Публічна група/створення групи - додаємо одразу
-                GroupMember newMember = new GroupMember();
-                newMember.setGroup(group);
-                newMember.setUser(userRepository.findById(addRequest.getUserId()).get());
-                GroupRole role = whileCreating ? GroupRole.ADMIN : GroupRole.MEMBER;
-                newMember.setRole(role);
-                groupMemberRepository.save(newMember);
-            }
-            else {
-                // Приватна група — створюємо або оновлюємо заявку
-                Optional<GroupJoinRequest> existingRequest = groupJoinRequestRepository
-                        .findTop1ByGroup_IdAndUser_IdOrderByCreatedDateDesc(addRequest.getGroupId(), addRequest.getUserId());
+        GroupMember maybeGroupMembers = groupMemberRepository.findByGroupIdAndUserId(groupId, userId).orElse(null);
 
-                GroupJoinRequest request = existingRequest.orElseGet(GroupJoinRequest::new);
-                request.setGroup(group);
-                request.setUser(userRepository.findById(addRequest.getUserId()).get());
-                request.setInitiator(userRepository.findById(addRequest.getInitiatedBy()).get());
-                request.setStatus(GroupJoinStatus.PENDING);
-                groupJoinRequestRepository.save(request);
-            }
+        // If user is already a member of the group, throw an exception
+        if (maybeGroupMembers != null) {
+            throw new RuntimeException("User with Id " + userId + " is already a member of this group");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User with id " + userId + " not found"));
+
+        // If the group is not private add the user directly
+        if (!group.isPrivate()) {
+            GroupMember newMember = new GroupMember();
+
+            newMember.setGroup(group);
+            newMember.setUser(user);
+            newMember.setRole(GroupRole.MEMBER);
+
+            groupMemberRepository.save(newMember);
+            return;
+        }
+
+        // If the group is private add the user to the join request list
+        Optional<GroupJoinRequest> request = groupJoinRequestRepository.findTop1ByGroup_IdAndUser_IdOrderByCreatedDateDesc(groupId, userId);
+
+        if (request.isPresent()) {
+            // If the user already has a request, update it
+            GroupJoinRequest joinRequest = request.get();
+            joinRequest.setStatus(GroupJoinStatus.PENDING);
+            groupJoinRequestRepository.save(joinRequest);
+        } else {
+            // If the user doesn't have a request, create a new one
+            GroupJoinRequest newRequest = new GroupJoinRequest();
+            newRequest.setGroup(group);
+            newRequest.setUser(user);
+            newRequest.setInitiator(user);
+            newRequest.setStatus(GroupJoinStatus.PENDING);
+
+            groupJoinRequestRepository.save(newRequest);
         }
     }
 
     public void respondToAddingRequest(GroupRespondRequest respondRequest) {
         long groupId = respondRequest.getGroupId();
         long userId = respondRequest.getUserId();
+
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new NotFoundException("Group with id " + groupId + " not found"));
         User user = userRepository.findById(userId).orElseThrow(
                 () -> new NotFoundException("User with id " + userId + " not found"));
+
         Optional<GroupMember> alreadyMember = groupMemberRepository.findByGroupIdAndUserId(groupId, userId);
+
         if (alreadyMember.isPresent()){
             throw new RuntimeException("This user is already is member of the group");
         }
+
         GroupJoinRequest request = groupJoinRequestRepository
                 .findByGroupIdAndUserId(groupId, userId)
                 .orElseThrow(() -> new NotFoundException("Join request not found"));
+
         if (respondRequest.getStatus().equals(GroupJoinStatus.APPROVED)) {
             GroupMember groupMember = new GroupMember();
+
             groupMember.setGroup(group);
             groupMember.setUser(user);
             groupMember.setRole(GroupRole.MEMBER);
-            groupMemberRepository.save(groupMember);
 
+            groupMemberRepository.save(groupMember);
         }
 
         // Delete from table group_join_requests
         groupJoinRequestRepository.delete(request);
-
     }
 
     public List<UserShortDto> getGroupMembers(long groupId) {
@@ -160,6 +173,7 @@ public class GroupService {
                 .orElseThrow(() -> new NotFoundException("Group with id " + groupId + " not found"));
         List<GroupMember> members = groupMemberRepository.findByGroupId(groupId)
                 .orElseThrow(() -> new NotFoundException("No members found for this group"));
+
         return members.stream()
                 .map(member -> modelMapper.map(member.getUser(), UserShortDto.class))
                 .toList();
@@ -170,6 +184,7 @@ public class GroupService {
                 .orElseThrow(() -> new NotFoundException("Group with id " + groupId + " not found"));
         List<GroupJoinRequest> requests = groupJoinRequestRepository.findByGroupId(groupId)
                 .orElseThrow(() -> new NotFoundException("No requests found for this group"));
+
         return requests.stream()
                 .map(request -> modelMapper.map(request.getUser(), UserShortDto.class))
                 .toList();

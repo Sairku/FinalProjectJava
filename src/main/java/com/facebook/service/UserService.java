@@ -1,10 +1,11 @@
 package com.facebook.service;
 
-import com.facebook.dto.FriendDetailsDto;
 import com.facebook.dto.UserDetailsDto;
+import com.facebook.dto.UserCurrentDetailsDto;
 import com.facebook.dto.UserShortDto;
 import com.facebook.dto.UserUpdateRequestDto;
 import com.facebook.enums.FriendStatus;
+import com.facebook.exception.NotFoundException;
 import com.facebook.model.User;
 import com.facebook.repository.FriendRepository;
 import com.facebook.repository.UserRepository;
@@ -22,11 +23,11 @@ public class UserService {
     private final FriendRepository friendRepository;
     private final ModelMapper modelMapper;
 
-    public UserDetailsDto getCurrentUserDetails(long userId) {
+    public UserCurrentDetailsDto getCurrentUserDetails(long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+                .orElseThrow(() -> new NotFoundException("User not found with id: " + userId));
 
-        UserDetailsDto userDetailsDto = modelMapper.map(user, UserDetailsDto.class);
+        UserCurrentDetailsDto userCurrentDetailsDto = modelMapper.map(user, UserCurrentDetailsDto.class);
 
         List<UserShortDto> friends = friendRepository.findByStatusAndUserId(FriendStatus.ACCEPTED, userId)
                 .stream()
@@ -37,19 +38,19 @@ public class UserService {
                 .map(friend -> modelMapper.map(friend.getFriend(), UserShortDto.class))
                 .toList();
 
-        userDetailsDto.setFriends(friends);
-        userDetailsDto.setFriendsRequests(friendsRequests);
+        userCurrentDetailsDto.setFriends(friends);
+        userCurrentDetailsDto.setFriendsRequests(friendsRequests);
 
-        return userDetailsDto;
+        return userCurrentDetailsDto;
     }
 
-    public FriendDetailsDto getFriendDetails(long userId, long currentUserId) {
+    public UserDetailsDto getUserDetails(long userId, long currentUserId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+                .orElseThrow(() -> new NotFoundException("User not found with id: " + userId));
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + currentUserId));
+                .orElseThrow(() -> new NotFoundException("User not found with id: " + currentUserId));
 
-        FriendDetailsDto friendDetailsDto = modelMapper.map(user, FriendDetailsDto.class);
+        UserDetailsDto friendDetailsDto = modelMapper.map(user, UserDetailsDto.class);
 
         List<UserShortDto> friends = friendRepository.findByStatusAndUserId(FriendStatus.ACCEPTED, userId)
                 .stream()
@@ -79,9 +80,9 @@ public class UserService {
         return friendDetailsDto;
     }
 
-    public UserDetailsDto updateUser(long userId, UserUpdateRequestDto updatedData) {
+    public UserCurrentDetailsDto updateUser(long userId, UserUpdateRequestDto updatedData) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+                .orElseThrow(() -> new NotFoundException("User not found with id: " + userId));
 
         if (updatedData.getFirstName() != null) {
             user.setFirstName(updatedData.getFirstName());
@@ -117,6 +118,6 @@ public class UserService {
 
         User savedUser = userRepository.save(user);
 
-        return modelMapper.map(savedUser, UserDetailsDto.class);
+        return modelMapper.map(savedUser, UserCurrentDetailsDto.class);
     }
 }

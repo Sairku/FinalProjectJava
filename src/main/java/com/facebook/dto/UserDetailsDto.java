@@ -2,6 +2,7 @@ package com.facebook.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
@@ -11,16 +12,8 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserDetailsDto {
-    private long id;
-    private String email;
-    private String firstName;
-    private String lastName;
-    private Date birthdate;
-    private String avatarUrl;
-    private String headerPhotoUrl;
-    private String homeCity;
-    private String currentCity;
-    private List<UserShortDto> friends = new ArrayList<>();
-    private List<UserShortDto> friendsRequests = new ArrayList<>();
+@EqualsAndHashCode(callSuper = true)
+public class UserDetailsDto extends UserCurrentDetailsDto {
+    private Date createdDate;
+    private List<UserShortDto> mutualFriends = new ArrayList<>();
 }

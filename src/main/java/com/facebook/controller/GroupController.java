@@ -22,6 +22,7 @@ public class GroupController {
     @PostMapping
     public ResponseEntity<?> createGroup(@Validated @RequestBody GroupCreateRequest groupCreateRequest) {
         GroupResponse groupResponse = groupService.create(groupCreateRequest);
+
         return ResponseHandler.generateResponse(HttpStatus.CREATED, false, "Group was created", groupResponse);
     }
 
@@ -29,6 +30,7 @@ public class GroupController {
     public ResponseEntity<?> updateGroup(@PathVariable Long id,
                                           @Validated @RequestBody GroupUpdateRequest updateRequest) {
         GroupResponse response = groupService.update(id, updateRequest);
+
         return ResponseHandler.generateResponse(HttpStatus.OK, false, "Group was updated", response);
     }
 
@@ -36,14 +38,17 @@ public class GroupController {
     public ResponseEntity<?> deleteGroup(@PathVariable Long id,
                                          @Validated @RequestBody GroupDeleteRequest deleteRequest) {
         groupService.delete(id, deleteRequest);
+
         return ResponseHandler.generateResponse(HttpStatus.OK, false, "Group was deleted", null);
     }
 
     @PostMapping("/add")
     public ResponseEntity<?> addUserToGroup(@Validated @RequestBody GroupAddRequest addRequest) {
         groupService.addUserToGroup(addRequest);
+
         boolean privateCondition = groupService.findById(addRequest.getGroupId()).isPrivate();
         String message;
+
         if (privateCondition)
             message =  "Request for adding to the group " + addRequest.getGroupId()+ " was sent from user with Id "+addRequest.getUserId();
         else
@@ -54,10 +59,13 @@ public class GroupController {
     @PutMapping("/respond")
     public ResponseEntity<?> respondToGroup(@Validated @RequestBody GroupRespondRequest respondRequest) {
         groupService.respondToAddingRequest(respondRequest);
+
         boolean status = respondRequest.getStatus().equals(GroupJoinStatus.APPROVED);
+
         String message = status ?
                 "User with Id "+respondRequest.getUserId() +" was added to the group " + respondRequest.getGroupId() :
                 "User with Id "+respondRequest.getUserId() +" was rejected to join to the group " + respondRequest.getGroupId();
+
         return ResponseHandler.generateResponse(HttpStatus.OK, false, message, null);
     }
 }

@@ -1,8 +1,8 @@
 package com.facebook.controller;
 
-import com.facebook.dto.FriendDetailsDto;
-import com.facebook.dto.UserAuthDto;
 import com.facebook.dto.UserDetailsDto;
+import com.facebook.dto.UserAuthDto;
+import com.facebook.dto.UserCurrentDetailsDto;
 import com.facebook.dto.UserUpdateRequestDto;
 import com.facebook.service.UserService;
 import com.facebook.util.ResponseHandler;
@@ -36,7 +36,7 @@ public class UserController {
         }
 
         if (currentUserId.equals(userId)) {
-            UserDetailsDto userDetails = userService.getCurrentUserDetails(userId);
+            UserCurrentDetailsDto userDetails = userService.getCurrentUserDetails(userId);
 
             return ResponseHandler.generateResponse(
                     HttpStatus.OK,
@@ -45,7 +45,7 @@ public class UserController {
                     userDetails
             );
         } else {
-            FriendDetailsDto friendDetails = userService.getFriendDetails(userId, currentUserId);
+            UserDetailsDto friendDetails = userService.getUserDetails(userId, currentUserId);
 
             return ResponseHandler.generateResponse(
                     HttpStatus.OK,
@@ -70,7 +70,7 @@ public class UserController {
             );
         }
 
-        UserDetailsDto updatedUser = userService.updateUser(userId, userUpdateRequestDto);
+        UserCurrentDetailsDto updatedUser = userService.updateUser(userId, userUpdateRequestDto);
 
         return ResponseHandler.generateResponse(
                 HttpStatus.OK,
