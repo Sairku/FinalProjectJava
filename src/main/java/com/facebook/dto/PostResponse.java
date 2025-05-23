@@ -5,6 +5,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -12,6 +14,6 @@ import java.time.LocalDateTime;
 public class PostResponse {
     private UserShortDto user;
     private String description;
-    private String imgUrl;
+    private List<String> images = new ArrayList<>();
     private LocalDateTime createdDate;
 }

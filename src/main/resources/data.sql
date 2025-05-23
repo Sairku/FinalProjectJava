@@ -106,7 +106,7 @@ REFERENCES `groups` (id) ON DELETE CASCADE ON UPDATE NO ACTION;
 CREATE TABLE IF NOT EXISTS post_images (
   id bigint NOT NULL AUTO_INCREMENT,
   post_id bigint NOT NULL,
-  image_url varchar(255),
+  url varchar(255),
   PRIMARY KEY (id)
 );
 

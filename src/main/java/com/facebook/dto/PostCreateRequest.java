@@ -6,6 +6,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -16,5 +19,5 @@ public class PostCreateRequest {
     @NotBlank(message = "Description is required")
     private String description;
 
-    private String imgUrl;
+    private List<String> images = new ArrayList<>();
 }

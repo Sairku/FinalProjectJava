@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.validator.constraints.URL;
 
 @Entity
 @Table(name = "post_images")
@@ -16,8 +17,9 @@ public class PostImage {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
-    @Column(name = "image_url")
-    private String imageUrl;
+    @Column(name = "url")
+    @URL(message = "Invalid URL format")
+    private String url;
 
     @ManyToOne
     @JoinColumn(

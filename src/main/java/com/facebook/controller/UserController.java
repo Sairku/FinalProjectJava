@@ -6,6 +6,7 @@ import com.facebook.dto.UserCurrentDetailsDto;
 import com.facebook.dto.UserUpdateRequestDto;
 import com.facebook.service.UserService;
 import com.facebook.util.ResponseHandler;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @AllArgsConstructor
 @RequestMapping("/api/users")
+@Tag(name = "Users API", description = "Endpoints for user operations")
 public class UserController {
     private final UserService userService;
 
