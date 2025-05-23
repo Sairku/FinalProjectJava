@@ -1,11 +1,11 @@
 package com.facebook.controller;
 
-
 import com.facebook.dto.PostCreateRequest;
 import com.facebook.dto.PostResponse;
 import com.facebook.dto.PostUpdateRequest;
 import com.facebook.service.PostService;
 import com.facebook.util.ResponseHandler;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/posts")
 @RequiredArgsConstructor
+@Tag(name = "Posts API", description = "Endpoints for post operations")
 public class PostController {
 
     private final PostService postService;
@@ -22,6 +23,7 @@ public class PostController {
     @PostMapping("/create")
     public ResponseEntity<?> createPost(@RequestBody @Valid PostCreateRequest request) {
         PostResponse response = postService.createPost(request);
+
         return ResponseHandler.generateResponse(HttpStatus.CREATED, false, "Post was created", response);
 
     }
@@ -31,11 +33,8 @@ public class PostController {
             @PathVariable Long id,
             @RequestBody @Valid PostUpdateRequest request
     ) {
-        if (!id.equals(request.getId())) {
-            return ResponseHandler.generateResponse(HttpStatus.BAD_REQUEST, true, "Invalid request", null);
-        }
+        PostResponse response = postService.updatePost(id, request);
 
-        PostResponse response = postService.updatePost(request);
         return ResponseHandler.generateResponse(HttpStatus.OK, false, "Post was updated", response);
     }
 }

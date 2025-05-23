@@ -4,6 +4,7 @@ import com.facebook.dto.*;
 import com.facebook.enums.GroupJoinStatus;
 import com.facebook.service.GroupService;
 import com.facebook.util.ResponseHandler;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/groups")
 @AllArgsConstructor
+@Tag(name = "Groups API", description = "Endpoints for group operations")
 public class GroupController {
 
     private final GroupService groupService;

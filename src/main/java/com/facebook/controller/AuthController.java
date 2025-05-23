@@ -8,6 +8,7 @@ import com.facebook.util.GoogleTokenVerifier;
 import com.facebook.util.JwtUtil;
 import com.facebook.util.ResponseHandler;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/auth")
 @AllArgsConstructor
+@Tag(name = "Authentication API", description = "Endpoints for registration and login")
 public class AuthController {
     private final AuthService authService;
     private final CustomUserDetailsService userDetailsService;

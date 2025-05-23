@@ -25,7 +25,7 @@ public class UserService {
 
     public UserCurrentDetailsDto getCurrentUserDetails(long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User not found with id: " + userId));
+                .orElseThrow(() -> new NotFoundException("Not found user with ID: " + userId));
 
         UserCurrentDetailsDto userCurrentDetailsDto = modelMapper.map(user, UserCurrentDetailsDto.class);
 
@@ -46,9 +46,9 @@ public class UserService {
 
     public UserDetailsDto getUserDetails(long userId, long currentUserId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User not found with id: " + userId));
+                .orElseThrow(() -> new NotFoundException("Not found user with ID: " + userId));
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new NotFoundException("User not found with id: " + currentUserId));
+                .orElseThrow(() -> new NotFoundException("Not found user with ID: " + currentUserId));
 
         UserDetailsDto friendDetailsDto = modelMapper.map(user, UserDetailsDto.class);
 
@@ -82,7 +82,7 @@ public class UserService {
 
     public UserCurrentDetailsDto updateUser(long userId, UserUpdateRequestDto updatedData) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User not found with id: " + userId));
+                .orElseThrow(() -> new NotFoundException("Not found user with ID: " + userId));
 
         if (updatedData.getFirstName() != null) {
             user.setFirstName(updatedData.getFirstName());

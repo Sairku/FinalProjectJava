@@ -3,6 +3,7 @@ package com.facebook.controller;
 import com.facebook.dto.FriendRequest;
 import com.facebook.service.FriendService;
 import com.facebook.util.ResponseHandler;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @AllArgsConstructor
 @RequestMapping("/api/friends")
+@Tag(name = "Friends management API", description = "Endpoints for friends management")
 public class FriendController {
     private final FriendService friendService;
 

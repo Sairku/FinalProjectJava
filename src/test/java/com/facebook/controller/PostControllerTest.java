@@ -16,6 +16,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.util.List;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -37,16 +39,17 @@ public class PostControllerTest {
         objectMapper = new ObjectMapper();
         mockMvc = MockMvcBuilders.standaloneSetup(postController).build();
     }
+
     @Test
     void createPost_shouldReturn201() throws Exception {
         PostCreateRequest request = new PostCreateRequest();
         request.setUserId(1L);
         request.setDescription("Test post");
-        request.setImgUrl("http://image.com/test.jpg");
+        request.setImages(List.of("http://image.com/test.jpg"));
 
         PostResponse response = new PostResponse();
         response.setDescription(request.getDescription());
-        response.setImgUrl(request.getImgUrl());
+        response.setImages(request.getImages());
 
         Mockito.when(postService.createPost(request)).thenReturn(response);
 

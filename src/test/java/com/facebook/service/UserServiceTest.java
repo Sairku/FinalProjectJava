@@ -49,28 +49,28 @@ public class UserServiceTest {
 
         user.setId(1L);
         user.setEmail("test@gmail.com");
-        user.setFirstName("FirstName");
-        user.setLastName("LastName");
+        user.setFirstName("First Name");
+        user.setLastName("Last Name");
         user.setGender(Gender.FEMALE);
         user.setPhone("1234567890");
         user.setAvatarUrl("http://example.com/avatar.jpg");
         user.setHeaderPhotoUrl("http://example.com/header.jpg");
         user.setBirthdate(Date.valueOf("2000-10-20"));
-        user.setHomeCity("HomeCity");
-        user.setCurrentCity("CurrentCity");
+        user.setHomeCity("Home City");
+        user.setCurrentCity("Current City");
         user.setProvider(Provider.LOCAL);
 
         userCurrentDetailsDto = new UserCurrentDetailsDto();
         userCurrentDetailsDto.setId(1L);
         userCurrentDetailsDto.setEmail("test@gmail.com");
-        userCurrentDetailsDto.setFirstName("FirstName");
-        userCurrentDetailsDto.setLastName("LastName");
+        userCurrentDetailsDto.setFirstName("First Name");
+        userCurrentDetailsDto.setLastName("Last Name");
         userCurrentDetailsDto.setPhone("1234567890");
         userCurrentDetailsDto.setAvatarUrl("http://example.com/avatar.jpg");
         userCurrentDetailsDto.setHeaderPhotoUrl("http://example.com/header.jpg");
         userCurrentDetailsDto.setBirthdate(Date.valueOf("2000-10-20"));
-        userCurrentDetailsDto.setHomeCity("HomeCity");
-        userCurrentDetailsDto.setCurrentCity("CurrentCity");
+        userCurrentDetailsDto.setHomeCity("Home City");
+        userCurrentDetailsDto.setCurrentCity("Current City");
 
         userUpdateRequestDto = new UserUpdateRequestDto(
                 "New First Name",
