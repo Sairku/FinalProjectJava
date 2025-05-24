@@ -1,6 +1,8 @@
 package com.facebook.controller;
 
 import com.facebook.dto.FriendRequest;
+import com.facebook.enums.FriendStatus;
+import com.facebook.model.User;
 import com.facebook.service.FriendService;
 import com.facebook.util.ResponseHandler;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -8,7 +10,11 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @RestController
@@ -18,11 +24,12 @@ import org.springframework.web.bind.annotation.*;
 public class FriendController {
     private final FriendService friendService;
 
-    @PostMapping("/add")
-    public ResponseEntity<Object> addFriend(@RequestBody FriendRequest friendRequest) {
-        log.info("Adding friend with ID: {}", friendRequest.getFriendId());
+    @GetMapping("/{userId}/add/{friendId}")
+    public ResponseEntity<Object> addFriend_v2(@PathVariable Long userId,
+                                                @PathVariable Long friendId) {
+        log.info("Adding friend with ID: {}", friendId);
 
-        if (friendRequest.getUserId().equals(friendRequest.getFriendId())) {
+        if (Objects.equals(userId, friendId)) {
             return ResponseHandler.generateResponse(
                     HttpStatus.BAD_REQUEST,
                     true,
@@ -30,22 +37,56 @@ public class FriendController {
                     null
             );
         }
-        return friendService.addFriendRequest(friendRequest.getUserId(), friendRequest.getFriendId());
+        return friendService.addFriendRequest(userId, friendId);
     }
 
-    @PutMapping("/respond")
-    public ResponseEntity<Object> respondToFriendRequest(@RequestBody FriendRequest friendRequest) {
-        log.info("Responding to friend request with ID: {}", friendRequest.getFriendId());
-        return friendService.responseToFriendRequest(
-                friendRequest.getUserId(),
-                friendRequest.getFriendId(),
-                friendRequest.getStatus()
-        );
+    @GetMapping("/{userId}/respond/{friendId}/{status}")
+    public ResponseEntity<Object> respondToFriendRequest_v2(@PathVariable Long userId,
+                                                         @PathVariable Long friendId,
+                                                         @PathVariable String status) {
+        log.info("Responding to friend request with ID: {}", friendId);
+        return switch (status) {
+            case "accept" -> friendService.responseToFriendRequest(
+                    userId,
+                    friendId,
+                    FriendStatus.ACCEPTED
+            );
+            case "decline" -> friendService.responseToFriendRequest(
+                    userId,
+                    friendId,
+                    FriendStatus.DECLINED
+            );
+            default -> ResponseHandler.generateResponse(
+                    HttpStatus.BAD_REQUEST,
+                    true,
+                    "Invalid status",
+                    null
+            );
+        };
     }
 
-    @DeleteMapping("/delete")
-    public ResponseEntity<Object> deleteFriend(@RequestBody FriendRequest friendRequest) {
-        log.info("Deleting friend with ID: {}", friendRequest.getFriendId());
-        return friendService.deleteFriend(friendRequest.getUserId(), friendRequest.getFriendId());
+    @DeleteMapping("/{userId}/delete/{friendId}")
+    public ResponseEntity<Object> deleteFriend_v2(@PathVariable Long userId,
+                                                  @PathVariable Long friendId) {
+        log.info("Deleting friend with ID: {}", friendId);
+        return friendService.deleteFriend(userId, friendId);
+    }
+
+    @GetMapping("/{userId}/get-friends")
+    public ResponseEntity<List<User>> getFriends(@PathVariable Long userId) {
+        log.info("Getting friends for user with ID: {}", userId);
+        return ResponseEntity.ok(friendService.getAllFriendUsers(userId));
+    }
+
+    @GetMapping("/{userId}/get-requests")
+    public ResponseEntity<List<User>> getRequests(@PathVariable Long userId) {
+        log.info("Getting friends for user with ID: {}", userId);
+        return ResponseEntity.ok(friendService.getAllUsersWhoHaveNotYetAccepted(userId));
+    }
+
+    @GetMapping("/{userId}/recommended")
+    public ResponseEntity<List<User>> getRecommendedFriends(@PathVariable Long userId) {
+        log.info("Getting recommended friends for user with ID: {}", userId);
+        return ResponseEntity.ok(friendService.getRecommendedFriends(userId));
     }
 }
