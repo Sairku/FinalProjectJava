@@ -1,7 +1,7 @@
 package com.facebook.dto;
 
-import com.facebook.validation.PastAtLeastYears;
-import com.facebook.validation.ValidGender;
+import com.facebook.annotation.PastAtLeastYears;
+import com.facebook.annotation.ValidGender;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

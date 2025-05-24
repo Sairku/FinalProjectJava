@@ -1,7 +1,7 @@
 package com.facebook.dto;
 
-import com.facebook.validation.NotBlankIfNotNull;
-import com.facebook.validation.PastAtLeastYears;
+import com.facebook.annotation.NotBlankIfNotNull;
+import com.facebook.annotation.PastAtLeastYears;
 import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;

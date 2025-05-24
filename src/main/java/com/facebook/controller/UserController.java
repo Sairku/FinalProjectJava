@@ -1,18 +1,24 @@
 package com.facebook.controller;
 
-import com.facebook.dto.UserDetailsDto;
+import com.facebook.annotation.CurrentUser;
 import com.facebook.dto.UserAuthDto;
-import com.facebook.dto.UserCurrentDetailsDto;
+import com.facebook.dto.UserDetailsDto;
 import com.facebook.dto.UserUpdateRequestDto;
+import com.facebook.openapi.ErrorResponseWrapper;
+import com.facebook.openapi.NotFoundResponseWrapper;
+import com.facebook.openapi.UserDetailsWrapper;
 import com.facebook.service.UserService;
 import com.facebook.util.ResponseHandler;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,44 +30,96 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
     private final UserService userService;
 
+    @Operation(
+            summary = "Get user details",
+            description = "Retrieve details of a user by ID",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "User details retrieved successfully",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = UserDetailsWrapper.class
+                                    )
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "User not found",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = NotFoundResponseWrapper.class
+                                    )
+                            )
+                    )
+            }
+    )
     @GetMapping("/{userId}")
-    public ResponseEntity<?> getUserDetails(@PathVariable long userId) {
-//        UserAuthDto currentUserData = (UserAuthDto) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-//        Long currentUserId = currentUserData.getId();
-        // TODO: Uncomment the above lines and remove the below line, we need to use token to get the current user
-        Long currentUserId;
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication.getPrincipal() instanceof UserAuthDto currentUserData) {
-            currentUserId = currentUserData.getId();
-        } else {
-            currentUserId = userId;
-        }
+    public ResponseEntity<?> getUserDetails(
+            @PathVariable long userId,
+            // Hide from Swagger UI
+            @Parameter(hidden = true)
+            @CurrentUser UserAuthDto currentUser
+    ) {
+        Long currentUserId = currentUser.getId();
+        UserDetailsDto userDetails = currentUserId.equals(userId) ?
+                userService.getCurrentUserDetails(userId) :
+                userService.getUserDetails(userId, currentUserId);
 
-        if (currentUserId.equals(userId)) {
-            UserCurrentDetailsDto userDetails = userService.getCurrentUserDetails(userId);
-
-            return ResponseHandler.generateResponse(
-                    HttpStatus.OK,
-                    false,
-                    "User details retrieved successfully",
-                    userDetails
-            );
-        } else {
-            UserDetailsDto friendDetails = userService.getUserDetails(userId, currentUserId);
-
-            return ResponseHandler.generateResponse(
-                    HttpStatus.OK,
-                    false,
-                    "Friend details retrieved successfully",
-                    friendDetails
-            );
-        }
+        return ResponseHandler.generateResponse(
+                HttpStatus.OK,
+                false,
+                "User details retrieved successfully",
+                userDetails
+        );
     }
 
+    @Operation(
+            summary = "Update user date",
+            description = "Update details of a user by ID",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "User updated successfully",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = UserDetailsWrapper.class
+                                    )
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "403",
+                            description = "You are not authorized to update this user",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = ErrorResponseWrapper.class
+                                    )
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "User not found",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = NotFoundResponseWrapper.class
+                                    )
+                            )
+                    )
+            }
+    )
     @PutMapping("/{userId}")
-    public ResponseEntity<?> updateUser(@PathVariable long userId, @RequestBody @Validated UserUpdateRequestDto userUpdateRequestDto) {
-        UserAuthDto currentUserData = (UserAuthDto) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        Long currentUserId = currentUserData.getId();
+    public ResponseEntity<?> updateUser(
+            @PathVariable long userId,
+            @RequestBody @Validated UserUpdateRequestDto userUpdateRequestDto,
+            @Parameter(hidden = true)
+            @CurrentUser UserAuthDto currentUser
+    ) {
+        Long currentUserId = currentUser.getId();
 
         if (!currentUserId.equals(userId)) {
             return ResponseHandler.generateResponse(
@@ -72,7 +130,7 @@ public class UserController {
             );
         }
 
-        UserCurrentDetailsDto updatedUser = userService.updateUser(userId, userUpdateRequestDto);
+        UserDetailsDto updatedUser = userService.updateUser(userId, userUpdateRequestDto);
 
         return ResponseHandler.generateResponse(
                 HttpStatus.OK,

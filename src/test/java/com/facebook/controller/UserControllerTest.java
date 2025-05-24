@@ -1,10 +1,10 @@
 package com.facebook.controller;
 
 import com.facebook.dto.UserAuthDto;
-import com.facebook.dto.UserCurrentDetailsDto;
 import com.facebook.dto.UserDetailsDto;
 import com.facebook.dto.UserUpdateRequestDto;
 import com.facebook.enums.Provider;
+import com.facebook.middleware.CurrentUserArgumentResolver;
 import com.facebook.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,7 +49,9 @@ public class UserControllerTest {
     void setUp() {
         SecurityContextHolder.setContext(securityContext);
 
-        mockMvc = MockMvcBuilders.standaloneSetup(userController).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(userController)
+                .setCustomArgumentResolvers(new CurrentUserArgumentResolver())
+                .build();
         currentUserData = new UserAuthDto(userId, "test@example.com", "test", Provider.LOCAL, new ArrayList<>());
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
@@ -58,7 +60,7 @@ public class UserControllerTest {
 
     @Test
     void testGetUserDetailsCurrentUser() throws Exception {
-        UserCurrentDetailsDto mockDetails = new UserCurrentDetailsDto();
+        UserDetailsDto mockDetails = new UserDetailsDto();
         mockDetails.setId(userId);
         mockDetails.setEmail("test@example.com");
         mockDetails.setFirstName("First Name");
@@ -90,7 +92,7 @@ public class UserControllerTest {
 
         mockMvc.perform(get("/api/users/{userId}", otherUserId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("Friend details retrieved successfully"))
+                .andExpect(jsonPath("$.message").value("User details retrieved successfully"))
                 .andExpect(jsonPath("$.data.id").value(otherUserId))
                 .andExpect(jsonPath("$.data.email").value("friend@example.com"))
                 .andExpect(jsonPath("$.data.firstName").value("Friend First Name"));
@@ -104,7 +106,7 @@ public class UserControllerTest {
         updateDto.setFirstName("Updated First Name");
         updateDto.setLastName("Updated Last Name");
 
-        UserCurrentDetailsDto updatedDetails = new UserCurrentDetailsDto();
+        UserDetailsDto updatedDetails = new UserDetailsDto();
         updatedDetails.setId(userId);
         updatedDetails.setFirstName("Updated First Name");
         updatedDetails.setLastName("Updated Last Name");

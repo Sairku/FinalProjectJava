@@ -1,4 +1,4 @@
-package com.facebook.validation;
+package com.facebook.annotation;
 
 import jakarta.validation.Constraint;
 import jakarta.validation.ConstraintValidator;

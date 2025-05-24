@@ -8,6 +8,10 @@ spring:
   profiles:
     active: local # Or prod based on your environment
 
+springdoc:
+  swagger-ui:
+    path: /docs/api.html
+
 logging:
   level:
     org.springframework.security: debug

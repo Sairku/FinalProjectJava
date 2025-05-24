@@ -2,12 +2,20 @@ package com.facebook.controller;
 
 import com.facebook.dto.*;
 import com.facebook.enums.Provider;
+import com.facebook.openapi.ErrorResponseWrapper;
+import com.facebook.openapi.LoginResponseWrapper;
+import com.facebook.openapi.NotFoundResponseWrapper;
+import com.facebook.openapi.UserDetailsWrapper;
 import com.facebook.service.AuthService;
 import com.facebook.service.CustomUserDetailsService;
 import com.facebook.util.GoogleTokenVerifier;
 import com.facebook.util.JwtUtil;
 import com.facebook.util.ResponseHandler;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,9 +42,35 @@ public class AuthController {
     private final JwtUtil jwtUtil;
     private final GoogleTokenVerifier googleTokenVerifier;
 
+    @Operation(
+            summary = "Google Login",
+            description = "Login using Google account",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "User logged in via Google successfully",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = LoginResponseWrapper.class
+                                    )
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "Invalid Google token",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = ErrorResponseWrapper.class
+                                    )
+                            )
+                    )
+            }
+    )
     @PostMapping("/google")
     public ResponseEntity<?> googleLogin(@RequestBody @Validated GoogleRequestDto googleRequestDto) {
-        LoginResponseDto loginResponseDto;
+        LoginResponseDto loginResponse;
 
         try {
             GoogleIdToken.Payload payload = googleTokenVerifier.verify(googleRequestDto.getIdToken());
@@ -60,13 +94,13 @@ public class AuthController {
                 googleRequestDto.setFirstName(firstName);
                 googleRequestDto.setLastName(lastName);
 
-                loginResponseDto = authService.registerGoogleUser(googleRequestDto);
+                loginResponse = authService.registerGoogleUser(googleRequestDto);
             } else {
                 UserAuthDto userDetails = userDetailsService.loadUserByEmail(email);
 
-                loginResponseDto = new LoginResponseDto();
-                loginResponseDto.setUserId(userDetails.getId());
-                loginResponseDto.setEmail(email);
+                loginResponse = new LoginResponseDto();
+                loginResponse.setUserId(userDetails.getId());
+                loginResponse.setEmail(email);
             }
 
             Authentication authentication = authenticationManager.authenticate(
@@ -74,7 +108,7 @@ public class AuthController {
             );
             String jwtToken = jwtUtil.generateToken(email);
 
-            loginResponseDto.setToken(jwtToken);
+            loginResponse.setToken(jwtToken);
 
             log.info("User with email {} logged in via Google successfully", email);
         } catch (Exception e) {
@@ -85,10 +119,36 @@ public class AuthController {
                 HttpStatus.OK,
                 false,
                 "User logged in via Google successfully",
-                loginResponseDto
+                loginResponse
         );
     }
 
+    @Operation(
+            summary = "Register User",
+            description = "Register a new user",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "201",
+                            description = "User registered successfully",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = LoginResponseWrapper.class
+                                    )
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Email already exists",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = ErrorResponseWrapper.class
+                                    )
+                            )
+                    )
+            }
+    )
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody @Validated RegisterRequestDto registerRequest) {
         if (authService.userByEmailExists(registerRequest.getEmail())) {
@@ -102,25 +162,51 @@ public class AuthController {
             );
         }
 
-        LoginResponseDto registerResponse = authService.register(registerRequest);
+        LoginResponseDto loginResponse = authService.register(registerRequest);
 
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(registerRequest.getEmail(), registerRequest.getPassword())
         );
-        String jwtToken = jwtUtil.generateToken(registerResponse.getEmail());
+        String jwtToken = jwtUtil.generateToken(loginResponse.getEmail());
 
-        registerResponse.setToken(jwtToken);
+        loginResponse.setToken(jwtToken);
 
-        log.info("User with email {} registered successfully", registerResponse.getEmail());
+        log.info("User with email {} registered successfully", loginResponse.getEmail());
 
         return ResponseHandler.generateResponse(
                 HttpStatus.CREATED,
                 false,
                 "User registered successfully",
-                registerResponse
+                loginResponse
         );
     }
 
+    @Operation(
+            summary = "Login User",
+            description = "Login using email and password",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "User logged in successfully",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = LoginResponseWrapper.class
+                                    )
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "Should be logged in via Google or invalid password",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = ErrorResponseWrapper.class
+                                    )
+                            )
+                    )
+            }
+    )
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody @Validated LoginRequestDto loginRequestDto) {
         UserAuthDto userDetails = userDetailsService.loadUserByEmail(loginRequestDto.getEmail());

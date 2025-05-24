@@ -1,7 +1,6 @@
 package com.facebook.service;
 
 import com.facebook.dto.UserDetailsDto;
-import com.facebook.dto.UserCurrentDetailsDto;
 import com.facebook.dto.UserUpdateRequestDto;
 import com.facebook.enums.FriendStatus;
 import com.facebook.enums.Gender;
@@ -41,7 +40,7 @@ public class UserServiceTest {
 
     private User user;
     private UserUpdateRequestDto userUpdateRequestDto;
-    private UserCurrentDetailsDto userCurrentDetailsDto;
+    private UserDetailsDto userCurrentDetailsDto;
 
     @BeforeEach
     void setUp() {
@@ -60,7 +59,7 @@ public class UserServiceTest {
         user.setCurrentCity("Current City");
         user.setProvider(Provider.LOCAL);
 
-        userCurrentDetailsDto = new UserCurrentDetailsDto();
+        userCurrentDetailsDto = new UserDetailsDto();
         userCurrentDetailsDto.setId(1L);
         userCurrentDetailsDto.setEmail("test@gmail.com");
         userCurrentDetailsDto.setFirstName("First Name");
@@ -106,9 +105,9 @@ public class UserServiceTest {
         userCurrentDetailsDto.setCurrentCity(userUpdateRequestDto.getCurrentCity());
 
         when(userRepository.save(user)).thenReturn(user);
-        when(modelMapper.map(user, UserCurrentDetailsDto.class)).thenReturn(userCurrentDetailsDto);
+        when(modelMapper.map(user, UserDetailsDto.class)).thenReturn(userCurrentDetailsDto);
 
-        UserCurrentDetailsDto updatedUser = userService.updateUser(1L, userUpdateRequestDto);
+        UserDetailsDto updatedUser = userService.updateUser(1L, userUpdateRequestDto);
 
         verify(userRepository, times(1)).save(user);
 
@@ -133,11 +132,11 @@ public class UserServiceTest {
     @Test
     void testGetCurrentUserDetails() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(modelMapper.map(user, UserCurrentDetailsDto.class)).thenReturn(userCurrentDetailsDto);
+        when(modelMapper.map(user, UserDetailsDto.class)).thenReturn(userCurrentDetailsDto);
         when(friendRepository.findByStatusAndUserId(FriendStatus.ACCEPTED, 1L)).thenReturn(new ArrayList<>());
         when(friendRepository.findByStatusAndFriendId(FriendStatus.PENDING, 1L)).thenReturn(new ArrayList<>());
 
-        UserCurrentDetailsDto foundUser = userService.getCurrentUserDetails(1L);
+        UserDetailsDto foundUser = userService.getCurrentUserDetails(1L);
 
         assertNotNull(foundUser);
         assertEquals(user.getId(), foundUser.getId());
@@ -194,7 +193,7 @@ public class UserServiceTest {
 
         when(modelMapper.map(otherUser, UserDetailsDto.class)).thenReturn(userDetailsDto);
 
-        UserCurrentDetailsDto foundUser = userService.getUserDetails(2L, 1L);
+        UserDetailsDto foundUser = userService.getUserDetails(2L, 1L);
 
         assertNotNull(foundUser);
         assertEquals(otherUser.getId(), foundUser.getId());
