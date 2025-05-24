@@ -32,14 +32,14 @@ public class FriendService {
     }
 
     // User trying to get a friend (like object Friend) by his friend's id (friendId)
-    public Friend getFriendById(Long friendId) {
-        return friendRepository.findById(friendId)
+    public Friend getFriendById(Long userId, Long friendId) {
+        return friendRepository.findByUserIdAndFriendId(userId, friendId)
                 .orElseThrow(() -> new NotFoundException("Friend not found"));
     }
 
     // User trying to get a friend (like object User) by his friend's id (friendId)
-    public User getUserWhoIsMayBeFriend(Long userId) {
-        return getFriendById(userId).getUser();
+    public User getUserWhoIsFriendById(Long userId, Long friendId) {
+        return getFriendById(userId, friendId).getFriend();
     }
 
     public List<Friend> getAllFriendRequests(Long userId) {
@@ -72,30 +72,26 @@ public class FriendService {
 
     // Get all friends (like object User) of a user with 'userId'
     public List<User> getAllUsersWhoAreFriends(Long userId) {
-        List<Friend> friends = getAllFriends(userId);
-        return userRepository.findAllById(friends.stream()
+        return friendRepository.findByStatusAndUserId(FriendStatus.ACCEPTED, userId)
+                .stream()
                 .map(Friend::getFriend)
-                .map(User::getId)
-                .toList());
+                .toList();
     }
 
     // Get all friends (like object User) to whom the user with 'userId' sent a request but not yet accepted
     public List<User> getAllUsersWhoHaveNotYetAccepted(Long userId) {
-        List<Friend> friends = getAllFriendsWhoHaveNotYetAccepted(userId);
-        return userRepository.findAllById(friends.stream()
+        return friendRepository.findByStatusAndUserId(FriendStatus.PENDING, userId)
+                .stream()
                 .map(Friend::getFriend)
-                .map(User::getId)
-                .toList());
+                .toList();
     }
 
     // Get all friends (like object User)
     // who sent a request to the user with 'userId' but user hasn't accepted them yet
     public List<User> getAllUsersWhoSentRequest(Long userId) {
-        List<Friend> friends = getAllFriendsWhoSentRequest(userId);
-        return userRepository.findAllById(friends.stream()
-                .map(Friend::getUser)
-                .map(User::getId)
-                .toList());
+        return getAllFriendsWhoSentRequest(userId).stream()
+                .map(Friend::getFriend)
+                .toList();
     }
 
     public ResponseEntity<Object> addFriendRequest(Long userId, Long friendId) {
@@ -122,8 +118,8 @@ public class FriendService {
 //            );
 //        }
 
-        Optional<Friend> existingRequest = friendRepository.findByUserIdAndFriendId(userId, friendId);
-        if (existingRequest.isPresent()) {
+        if (friendRepository.findByUserIdAndFriendId(userId, friendId).isPresent() ||
+                friendRepository.findByUserIdAndFriendId(friendId, userId).isPresent()) {
             return ResponseHandler.generateResponse(
                     HttpStatus.BAD_REQUEST,
                     true,
