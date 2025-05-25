@@ -2,6 +2,7 @@ package com.facebook.controller;
 
 import com.facebook.dto.PostCreateRequest;
 import com.facebook.dto.PostResponse;
+import com.facebook.dto.PostUpdateRequest;
 import com.facebook.service.PostService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -61,5 +62,38 @@ public class PostControllerTest {
                 .andExpect(jsonPath("$.error").value(false))
                 .andExpect(jsonPath("$.data.description").value("Test post"));
     }
+    @Test
+    void updatePost_shouldReturn200() throws Exception {
+        Long postId = 1L;
+
+        PostUpdateRequest request = new PostUpdateRequest();
+        request.setDescription("Updated description");
+        request.setImages(List.of("http://image.com/updated.jpg"));
+
+        PostResponse response = new PostResponse();
+        response.setDescription(request.getDescription());
+        response.setImages(request.getImages());
+
+        Mockito.when(postService.updatePost(postId, request)).thenReturn(response);
+
+        mockMvc.perform(put("/api/posts/{id}", postId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Post was updated"))
+                .andExpect(jsonPath("$.error").value(false))
+                .andExpect(jsonPath("$.data.description").value("Updated description"));
+    }
+
+    @Test
+    void createPost_shouldReturn400_whenInvalidRequest() throws Exception {
+        PostCreateRequest invalidRequest = new PostCreateRequest(); // порожній
+
+        mockMvc.perform(post("/api/posts/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                .andExpect(status().isBadRequest());
+    }
+
 }
 
