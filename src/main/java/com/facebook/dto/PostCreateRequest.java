@@ -13,8 +13,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PostCreateRequest {
-    @NotNull(message = "User id is required")
-    private Long userId;
 
     @NotBlank(message = "Description is required")
     private String description;
