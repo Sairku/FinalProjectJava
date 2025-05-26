@@ -19,16 +19,15 @@ public class PostService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
 
-    public PostResponse createPost(PostCreateRequest request) {
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new NotFoundException("Not found user with ID: " + request.getUserId()));
+    public PostResponse createPost(Long userId, PostCreateRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         Post post = new Post();
         post.setUser(user);
         post.setDescription(request.getDescription());
         request.getImages().forEach(imageUrl -> {
             PostImage postImage = new PostImage();
-
             postImage.setUrl(imageUrl);
             postImage.setPost(post);
             post.getImages().add(postImage);
@@ -43,6 +42,7 @@ public class PostService {
 
         return new PostResponse(userDTO, savedPost.getDescription(), images, savedPost.getCreatedDate());
     }
+
 
     public PostResponse updatePost(long postId, PostUpdateRequest request) {
         Post post = postRepository.findById(postId)

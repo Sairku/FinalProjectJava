@@ -1,10 +1,13 @@
 package com.facebook.controller;
 
+import com.facebook.annotation.CurrentUser;
 import com.facebook.dto.PostCreateRequest;
 import com.facebook.dto.PostResponse;
 import com.facebook.dto.PostUpdateRequest;
+import com.facebook.dto.UserAuthDto;
 import com.facebook.service.PostService;
 import com.facebook.util.ResponseHandler;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,12 +24,24 @@ public class PostController {
     private final PostService postService;
 
     @PostMapping("/create")
-    public ResponseEntity<?> createPost(@RequestBody @Valid PostCreateRequest request) {
-        PostResponse response = postService.createPost(request);
+    public ResponseEntity<?> createPost(
+            @RequestBody @Valid PostCreateRequest request,
+            @Parameter(hidden = true) @CurrentUser UserAuthDto currentUser
+    ) {
+        Long currentUserId = currentUser.getId();
+
+        PostResponse response = postService.createPost(currentUserId, request);
 
         return ResponseHandler.generateResponse(HttpStatus.CREATED, false, "Post was created", response);
-
     }
+
+//    @PostMapping("/create")
+//    public ResponseEntity<?> createPost(@RequestBody @Valid PostCreateRequest request) {
+//        PostResponse response = postService.createPost(request);
+//
+//        return ResponseHandler.generateResponse(HttpStatus.CREATED, false, "Post was created", response);
+//
+//    }
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updatePost(
