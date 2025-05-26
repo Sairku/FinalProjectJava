@@ -23,6 +23,7 @@ public class UserAuthDto extends User {
     ) {
         super(username, password, authorities);
         this.id = id;
+        this.provider = provider;
     }
 
     public long getId() {
