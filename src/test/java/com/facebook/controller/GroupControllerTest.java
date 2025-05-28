@@ -2,6 +2,8 @@ package com.facebook.controller;
 
 import com.facebook.dto.*;
 import com.facebook.enums.GroupJoinStatus;
+import com.facebook.enums.Provider;
+import com.facebook.middleware.CurrentUserArgumentResolver;
 import com.facebook.model.Group;
 import com.facebook.model.User;
 import com.facebook.service.GroupService;
@@ -14,62 +16,79 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.test.web.servlet.setup.StandaloneMockMvcBuilder;
+
+import java.util.ArrayList;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
 public class GroupControllerTest {
-
-    private MockMvc mockMvc;
-
     @Mock
     private GroupService groupService;
+
+    @Mock
+    private SecurityContext securityContext;
+
+    @Mock
+    private Authentication authentication;
 
     @InjectMocks
     private GroupController groupController;
 
+    private MockMvc mockMvc;
+
     private ObjectMapper objectMapper;
 
+    private UserAuthDto currentUserData;
     private GroupCreateRequest createRequest;
     private GroupUpdateRequest updateRequest;
-    private GroupDeleteRequest deleteRequest;
-    private GroupAddRequest addRequest;
-    private GroupRespondRequest respondRequest;
+    private GroupMemberRequest groupMemberRequest;
     private GroupResponse groupResponse;
+    private Long userId = 1L;
+    private Long groupId = 100L;
+
+    private MockMvc buildMockMvc(boolean withCurrentUser) {
+        StandaloneMockMvcBuilder builder = MockMvcBuilders.standaloneSetup(groupController);
+
+        if (withCurrentUser) {
+            builder.setCustomArgumentResolvers(new CurrentUserArgumentResolver());
+
+            UserAuthDto currentUserData = new UserAuthDto(userId, "test@example.com", "test", Provider.LOCAL, new ArrayList<>());
+
+            when(securityContext.getAuthentication()).thenReturn(authentication);
+            when(authentication.getPrincipal()).thenReturn(currentUserData);
+
+            SecurityContextHolder.setContext(securityContext);
+        }
+        return builder.build();
+    }
 
     @BeforeEach
     void setUp() {
         objectMapper = new ObjectMapper();
-        mockMvc = MockMvcBuilders.standaloneSetup(groupController).build();
 
         createRequest = new GroupCreateRequest();
-        createRequest.setOwnerId(1L);
         createRequest.setName("Test Group");
         createRequest.setIsPrivate(true);
 
         updateRequest = new GroupUpdateRequest();
         updateRequest.setDescription("Some desc");
         updateRequest.setColor("#FFFFFF");
-        updateRequest.setImgUrl("https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/Test.svg/1200px-Test.svg.png");
 
-        deleteRequest = new GroupDeleteRequest();
-        deleteRequest.setOwnerId(1L);
-
-        addRequest = new GroupAddRequest();
-        addRequest.setGroupId(100L);
-        addRequest.setUserId(2L);
-        addRequest.setInitiatedBy(2L);
-
-        respondRequest = new GroupRespondRequest();
-        respondRequest.setGroupId(100L);
-        respondRequest.setUserId(2L);
-        respondRequest.setStatus(GroupJoinStatus.APPROVED);
+        groupMemberRequest = new GroupMemberRequest();
+        groupMemberRequest.setUserId(userId);
+        groupMemberRequest.setStatus(GroupJoinStatus.APPROVED.name());
 
         groupResponse = new GroupResponse();
         groupResponse.setName(createRequest.getName());
@@ -80,7 +99,9 @@ public class GroupControllerTest {
 
     @Test
     void createGroup_shouldReturn201() throws Exception {
-        Mockito.when(groupService.create(any(GroupCreateRequest.class))).thenReturn(groupResponse);
+        mockMvc = buildMockMvc(true);
+
+        Mockito.when(groupService.create(eq(userId), any(GroupCreateRequest.class))).thenReturn(groupResponse);
 
         mockMvc.perform(post("/api/groups")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -92,10 +113,12 @@ public class GroupControllerTest {
 
     @Test
     void updateGroup_shouldReturn200() throws Exception {
-        Mockito.when(groupService.update(eq(100L), any(GroupUpdateRequest.class)))
+        mockMvc = buildMockMvc(true);
+
+        Mockito.when(groupService.update(eq(groupId), any(GroupUpdateRequest.class), eq(userId)))
                 .thenReturn(groupResponse);
 
-        mockMvc.perform(put("/api/groups/100")
+        mockMvc.perform(put("/api/groups/" + groupId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest)))
                 .andExpect(status().isOk())
@@ -104,64 +127,80 @@ public class GroupControllerTest {
 
     @Test
     void deleteGroup_shouldReturn200() throws Exception {
-        Mockito.doNothing().when(groupService).delete(eq(100L), any(GroupDeleteRequest.class));
+        mockMvc = buildMockMvc(true);
 
-        mockMvc.perform(delete("/api/groups/100")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(deleteRequest)))
+        Mockito.doNothing().when(groupService).delete(eq(groupId), eq(userId));
+
+        mockMvc.perform(delete("/api/groups/" + groupId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Group was deleted"));
     }
 
     @Test
     void addUserToGroup_privateGroup_shouldReturnRequestMessage() throws Exception {
-        Mockito.doNothing().when(groupService).addUserToGroup(any(GroupAddRequest.class));
-        Mockito.when(groupService.findById(100L)).thenReturn(new Group(
-                groupResponse.getName(), groupResponse.getDescription(),
-                groupResponse.getImageUrl(),groupResponse.getColor(),
-                groupResponse.isPrivate(),new User()));
+        mockMvc = buildMockMvc(true);
+        Group group = new Group(
+                groupResponse.getName(),
+                groupResponse.getDescription(),
+                groupResponse.getImageUrl(),
+                groupResponse.getColor(),
+                true,
+                new User()
+        );
 
-        mockMvc.perform(post("/api/groups/add")
+        Mockito.doNothing().when(groupService).addUserToGroup(groupId, userId, userId);
+
+        mockMvc.perform(post("/api/groups/" + groupId + "/members")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(addRequest)))
+                        .content(objectMapper.writeValueAsString(groupMemberRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message", containsString("Request for adding to the group")));
     }
 
     @Test
     void addUserToGroup_publicGroup_shouldReturnAddedMessage() throws Exception {
-        Mockito.doNothing().when(groupService).addUserToGroup(any(GroupAddRequest.class));
-        Mockito.when(groupService.findById(100L)).thenReturn(new Group(
-                groupResponse.getName(), groupResponse.getDescription(),
-                groupResponse.getImageUrl(),groupResponse.getColor(),
-                !groupResponse.isPrivate(),new User()));
+        mockMvc = buildMockMvc(true);
+        Group group = new Group(
+                groupResponse.getName(),
+                groupResponse.getDescription(),
+                groupResponse.getImageUrl(),
+                groupResponse.getColor(),
+                false,
+                new User()
+        );
 
-        mockMvc.perform(post("/api/groups/add")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(addRequest)))
+        Mockito.doNothing().when(groupService).addUserToGroup(groupId, userId, userId);
+
+        Mockito.when(groupService.findById(groupId)).thenReturn(group);
+
+        mockMvc.perform(post("/api/groups/" + groupId + "/join"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message", containsString("was added to the group")));
     }
 
     @Test
     void respondToGroup_approved_shouldReturnAddedMessage() throws Exception {
-        Mockito.doNothing().when(groupService).respondToAddingRequest(any(GroupRespondRequest.class));
+        mockMvc = buildMockMvc(false);
 
-        mockMvc.perform(put("/api/groups/respond")
+        Mockito.doNothing().when(groupService).respondToAddingRequest(eq(groupId), any(GroupMemberRequest.class));
+
+        mockMvc.perform(put("/api/groups/" + groupId + "/members")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(respondRequest)))
+                        .content(objectMapper.writeValueAsString(groupMemberRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message", containsString("was added to the group")));
     }
 
     @Test
     void respondToGroup_rejected_shouldReturnRejectedMessage() throws Exception {
-        respondRequest.setStatus(GroupJoinStatus.REJECTED);
-        Mockito.doNothing().when(groupService).respondToAddingRequest(any(GroupRespondRequest.class));
+        mockMvc = buildMockMvc(false);
 
-        mockMvc.perform(put("/api/groups/respond")
+        groupMemberRequest.setStatus(GroupJoinStatus.REJECTED.name());
+        Mockito.doNothing().when(groupService).respondToAddingRequest(eq(groupId), any(GroupMemberRequest.class));
+
+        mockMvc.perform(put("/api/groups/" + groupId + "/members")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(respondRequest)))
+                        .content(objectMapper.writeValueAsString(groupMemberRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message", containsString("was rejected to join to the group")));
     }

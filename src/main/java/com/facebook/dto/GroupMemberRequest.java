@@ -1,5 +1,6 @@
 package com.facebook.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
@@ -11,16 +12,12 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class GroupAddRequest {
-    @NotNull(message = "Group's Id is required")
-    @Positive(message = "Group's Id must be positive")
-    private Long groupId;
-
+public class GroupMemberRequest {
+    @Schema(description = "ID of the user to be added", example = "123", required = true)
     @NotNull(message = "User's Id is required")
     @Positive(message = "User's Id must be positive")
     private Long userId;
 
-    @NotNull(message = "Initiator's Id is required")
-    @Positive(message = "Initiator's Id must be positive")
-    private Long initiatedBy;
+    @Schema(description = "Membership status. Optional for POST, used only in PUT", example = "APPROVED/REJECTED", required = false)
+    private String status = "PENDING";
 }

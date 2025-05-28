@@ -4,8 +4,6 @@ import com.facebook.dto.*;
 import com.facebook.enums.Provider;
 import com.facebook.openapi.ErrorResponseWrapper;
 import com.facebook.openapi.LoginResponseWrapper;
-import com.facebook.openapi.NotFoundResponseWrapper;
-import com.facebook.openapi.UserDetailsWrapper;
 import com.facebook.service.AuthService;
 import com.facebook.service.CustomUserDetailsService;
 import com.facebook.util.GoogleTokenVerifier;
@@ -17,6 +15,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -24,7 +23,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -69,7 +67,7 @@ public class AuthController {
             }
     )
     @PostMapping("/google")
-    public ResponseEntity<?> googleLogin(@RequestBody @Validated GoogleRequestDto googleRequestDto) {
+    public ResponseEntity<?> googleLogin(@RequestBody @Valid GoogleRequestDto googleRequestDto) {
         LoginResponseDto loginResponse;
 
         try {
@@ -150,7 +148,7 @@ public class AuthController {
             }
     )
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody @Validated RegisterRequestDto registerRequest) {
+    public ResponseEntity<?> register(@RequestBody @Valid RegisterRequestDto registerRequest) {
         if (authService.userByEmailExists(registerRequest.getEmail())) {
             log.info("User with email: {} can't be created. It already exists.", registerRequest.getEmail());
 
@@ -208,7 +206,7 @@ public class AuthController {
             }
     )
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody @Validated LoginRequestDto loginRequestDto) {
+    public ResponseEntity<?> login(@RequestBody @Valid LoginRequestDto loginRequestDto) {
         UserAuthDto userDetails = userDetailsService.loadUserByEmail(loginRequestDto.getEmail());
 
         if (userDetails.getProvider().equals(Provider.GOOGLE)) {

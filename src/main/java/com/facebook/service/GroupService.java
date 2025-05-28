@@ -20,7 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -33,21 +32,20 @@ public class GroupService {
     private final GroupMemberRepository groupMemberRepository;
     private final GroupJoinRequestRepository groupJoinRequestRepository;
 
-    public GroupResponse create(GroupCreateRequest groupCreateRequest) {
-        long ownerId = groupCreateRequest.getOwnerId();
+    public GroupResponse create(long userId, GroupCreateRequest groupCreateRequest) {
         modelMapper.typeMap(GroupCreateRequest.class, Group.class)
                 .addMappings(m -> m.skip(Group::setId));
 
-        Group maybeGroup = modelMapper.map(groupCreateRequest, Group.class);
-        User maybeUser = userRepository.findById(ownerId)
-                .orElseThrow(()->new NotFoundException("No user with ID: "+ ownerId));
+        Group group = modelMapper.map(groupCreateRequest, Group.class);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("No user with ID: " + userId));
 
-        maybeGroup.setOwner(maybeUser);
-        Group groupSaved = groupRepository.save(maybeGroup);
+        group.setOwner(user);
+        Group groupSaved = groupRepository.save(group);
 
         GroupMember groupMember = new GroupMember();
         groupMember.setGroup(groupSaved);
-        groupMember.setUser(maybeUser);
+        groupMember.setUser(user);
         groupMember.setRole(GroupRole.ADMIN);
 
         groupMemberRepository.save(groupMember);
@@ -55,9 +53,13 @@ public class GroupService {
         return modelMapper.map(groupSaved, GroupResponse.class);
     }
 
-    public GroupResponse update(Long groupId, GroupUpdateRequest updateRequest) {
+    public GroupResponse update(Long groupId, GroupUpdateRequest updateRequest, Long userId) {
         Group group = groupRepository.findById(groupId)
-                .orElseThrow(() -> new RuntimeException("Group not found with id: " + groupId));
+                .orElseThrow(() -> new NotFoundException("Group not found with id: " + groupId));
+
+        if (!group.getOwner().getId().equals(userId)) {
+            throw new RuntimeException("You are not the owner of this group");
+        }
 
         if (updateRequest.getDescription() != null)
             group.setDescription(updateRequest.getDescription());
@@ -75,28 +77,25 @@ public class GroupService {
     }
 
 
-    public void delete(Long id, GroupDeleteRequest deleteRequest) {
-        Optional<Group> maybeGroup = groupRepository.findById(id);
+    public void delete(Long id, Long userId) {
+        Group group = groupRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Group not found with ID: " + id));
 
-        if (maybeGroup.isEmpty())
-            throw new NotFoundException("Group with id "+id+" not found");
-        else if(!Objects.equals(maybeGroup.get().getOwner().getId(), deleteRequest.getOwnerId()))
-            throw new RuntimeException("You are not owner of this group");
+        if (!group.getOwner().getId().equals(userId)) {
+            throw new RuntimeException("You are not the owner of this group");
+        }
 
         groupRepository.deleteById(id);
     }
 
-    public void addUserToGroup(GroupAddRequest addRequest) {
-        long groupId = addRequest.getGroupId();
-        long userId = addRequest.getUserId();
-
+    public void addUserToGroup(long groupId, long userId, long initiatorId) {
         Group group = groupRepository.findById(groupId).orElseThrow(
                 () -> new NotFoundException("Group with id " + groupId + " not found"));
 
-        GroupMember maybeGroupMembers = groupMemberRepository.findByGroupIdAndUserId(groupId, userId).orElse(null);
+        GroupMember maybeGroupMember = groupMemberRepository.findByGroupIdAndUserId(groupId, userId).orElse(null);
 
         // If user is already a member of the group, throw an exception
-        if (maybeGroupMembers != null) {
+        if (maybeGroupMember != null) {
             throw new RuntimeException("User with Id " + userId + " is already a member of this group");
         }
 
@@ -104,7 +103,7 @@ public class GroupService {
                 .orElseThrow(() -> new NotFoundException("User with id " + userId + " not found"));
 
         // If the group is not private add the user directly
-        if (!group.isPrivate()) {
+        if (!group.isPrivate() && userId == initiatorId) {
             GroupMember newMember = new GroupMember();
 
             newMember.setGroup(group);
@@ -125,18 +124,22 @@ public class GroupService {
             groupJoinRequestRepository.save(joinRequest);
         } else {
             // If the user doesn't have a request, create a new one
+            User initiator = userId == initiatorId ?
+                    user :
+                    userRepository.findById(initiatorId)
+                            .orElseThrow(() -> new NotFoundException("Initiator with id " + initiatorId + " not found"));
+
             GroupJoinRequest newRequest = new GroupJoinRequest();
             newRequest.setGroup(group);
             newRequest.setUser(user);
-            newRequest.setInitiator(user);
+            newRequest.setInitiator(initiator);
             newRequest.setStatus(GroupJoinStatus.PENDING);
 
             groupJoinRequestRepository.save(newRequest);
         }
     }
 
-    public void respondToAddingRequest(GroupRespondRequest respondRequest) {
-        long groupId = respondRequest.getGroupId();
+    public void respondToAddingRequest(long groupId, GroupMemberRequest respondRequest) {
         long userId = respondRequest.getUserId();
 
         Group group = groupRepository.findById(groupId)
@@ -146,7 +149,7 @@ public class GroupService {
 
         Optional<GroupMember> alreadyMember = groupMemberRepository.findByGroupIdAndUserId(groupId, userId);
 
-        if (alreadyMember.isPresent()){
+        if (alreadyMember.isPresent()) {
             throw new RuntimeException("This user is already is member of the group");
         }
 
@@ -154,7 +157,7 @@ public class GroupService {
                 .findByGroupIdAndUserId(groupId, userId)
                 .orElseThrow(() -> new NotFoundException("Join request not found"));
 
-        if (respondRequest.getStatus().equals(GroupJoinStatus.APPROVED)) {
+        if (respondRequest.getStatus().equals(GroupJoinStatus.APPROVED.name())) {
             GroupMember groupMember = new GroupMember();
 
             groupMember.setGroup(group);
@@ -190,9 +193,9 @@ public class GroupService {
                 .toList();
     }
 
-    public Group findById(Long id){
+    public Group findById(Long id) {
         return groupRepository.findById(id)
-                .orElseThrow(()->new NotFoundException("Group isn't found"));
+                .orElseThrow(() -> new NotFoundException("Group isn't found"));
     }
 
     public Page<GroupResponse> getAll(Pageable pageable) {

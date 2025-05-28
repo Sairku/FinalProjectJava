@@ -47,7 +47,6 @@ class PostServiceTest {
     @Test
     void createPost_shouldReturnPostResponse() {
         PostCreateRequest request = new PostCreateRequest();
-        request.setUserId(1L);
         request.setDescription("Test post");
         request.setImages(List.of("img1.jpg", "img2.jpg"));
 
@@ -58,7 +57,7 @@ class PostServiceTest {
             return savedPost;
         });
 
-        PostResponse response = postService.createPost(request);
+        PostResponse response = postService.createPost(1L, request);
 
         assertNotNull(response);
         assertEquals("Test post", response.getDescription());
@@ -71,12 +70,11 @@ class PostServiceTest {
     @Test
     void createPost_shouldThrowNotFound_whenUserMissing() {
         PostCreateRequest request = new PostCreateRequest();
-        request.setUserId(999L);
         request.setDescription("Should fail");
 
         when(userRepository.findById(999L)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> postService.createPost(request));
+        assertThrows(NotFoundException.class, () -> postService.createPost(999L, request));
     }
 
     @Test
