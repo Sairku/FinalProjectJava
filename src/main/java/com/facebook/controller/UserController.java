@@ -112,25 +112,14 @@ public class UserController {
                     )
             }
     )
-    @PutMapping("/{userId}")
+    @PutMapping
     public ResponseEntity<?> updateUser(
-            @PathVariable long userId,
             @RequestBody @Valid UserUpdateRequestDto userUpdateRequestDto,
             @Parameter(hidden = true)
             @CurrentUser UserAuthDto currentUser
     ) {
-        Long currentUserId = currentUser.getId();
-
-        if (!currentUserId.equals(userId)) {
-            return ResponseHandler.generateResponse(
-                    HttpStatus.FORBIDDEN,
-                    true,
-                    "You are not authorized to update this user",
-                    null
-            );
-        }
-
-        UserDetailsDto updatedUser = userService.updateUser(userId, userUpdateRequestDto);
+        long currentUserId = currentUser.getId();
+        UserDetailsDto updatedUser = userService.updateUser(currentUserId, userUpdateRequestDto);
 
         return ResponseHandler.generateResponse(
                 HttpStatus.OK,
