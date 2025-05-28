@@ -15,11 +15,11 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
@@ -115,7 +115,7 @@ public class UserController {
     @PutMapping("/{userId}")
     public ResponseEntity<?> updateUser(
             @PathVariable long userId,
-            @RequestBody @Validated UserUpdateRequestDto userUpdateRequestDto,
+            @RequestBody @Valid UserUpdateRequestDto userUpdateRequestDto,
             @Parameter(hidden = true)
             @CurrentUser UserAuthDto currentUser
     ) {
