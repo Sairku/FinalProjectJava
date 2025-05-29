@@ -131,4 +131,17 @@ public class PostControllerTest {
                         .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andExpect(status().isBadRequest());
     }
+    @Test
+    void deletePost_shouldReturn200_whenDeleted() throws Exception {
+        Long postId = 1L;
+
+        mockMvc = buildMockMvc(false);
+        Mockito.doNothing().when(postService).deletePost(postId);
+
+        mockMvc.perform(delete("/api/posts/{id}", postId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Post was deleted"))
+                .andExpect(jsonPath("$.error").value(false))
+                .andExpect(jsonPath("$.data").doesNotExist());
+    }
 }
