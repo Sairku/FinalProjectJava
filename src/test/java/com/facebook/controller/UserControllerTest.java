@@ -113,7 +113,7 @@ public class UserControllerTest {
 
         when(userService.updateUser(eq(userId), any(UserUpdateRequestDto.class))).thenReturn(updatedDetails);
 
-        mockMvc.perform(put("/api/users/{userId}", userId)
+        mockMvc.perform(put("/api/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(new ObjectMapper().writeValueAsString(updateDto)))
                 .andExpect(status().isOk())
@@ -122,18 +122,5 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.data.lastName").value("Updated Last Name"));
 
         verify(userService, times(1)).updateUser(eq(userId), any(UserUpdateRequestDto.class));
-    }
-
-    @Test
-    void testUpdateUserForbidden() throws Exception {
-        long otherUserId = 2L;
-
-        UserUpdateRequestDto updateDto = new UserUpdateRequestDto();
-        updateDto.setFirstName("Hacker");
-
-        mockMvc.perform(put("/api/users/{userId}", otherUserId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(new ObjectMapper().writeValueAsString(updateDto)))
-                .andExpect(status().isForbidden());
     }
 }
