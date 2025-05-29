@@ -114,4 +114,21 @@ class PostServiceTest {
 
         assertThrows(NotFoundException.class, () -> postService.updatePost(999L, request));
     }
+    @Test
+    void deletePost_shouldCallRepositoryDelete_whenPostExists() {
+        Post post = new Post();
+        post.setId(1L);
+        when(postRepository.findById(1L)).thenReturn(Optional.of(post));
+
+        postService.deletePost(1L);
+
+        verify(postRepository).delete(post);
+    }
+    @Test
+    void deletePost_shouldThrowNotFound_whenPostMissing() {
+        when(postRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> postService.deletePost(999L));
+    }
+
 }

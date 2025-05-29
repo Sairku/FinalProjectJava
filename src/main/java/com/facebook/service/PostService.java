@@ -43,7 +43,6 @@ public class PostService {
         return new PostResponse(userDTO, savedPost.getDescription(), images, savedPost.getCreatedDate());
     }
 
-
     public PostResponse updatePost(long postId, PostUpdateRequest request) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new NotFoundException("Not found post with ID: " + postId));
@@ -54,7 +53,6 @@ public class PostService {
 
         request.getImages().forEach(imageUrl -> {
             PostImage postImage = new PostImage();
-
             postImage.setUrl(imageUrl);
             postImage.setPost(post);
             post.getImages().add(postImage);
@@ -74,5 +72,12 @@ public class PostService {
                 images,
                 updatedPost.getCreatedDate()
         );
+    }
+
+    public void deletePost(Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new NotFoundException("Not found post with ID: " + postId));
+
+        postRepository.delete(post);
     }
 }
