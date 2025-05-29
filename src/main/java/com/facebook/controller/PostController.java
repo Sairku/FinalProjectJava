@@ -5,6 +5,7 @@ import com.facebook.dto.PostCreateRequest;
 import com.facebook.dto.PostResponse;
 import com.facebook.dto.PostUpdateRequest;
 import com.facebook.dto.UserAuthDto;
+import com.facebook.openapi.ErrorResponseWrapper;
 import com.facebook.service.PostService;
 import com.facebook.util.ResponseHandler;
 import io.swagger.v3.oas.annotations.Operation;
@@ -47,9 +48,21 @@ public class PostController {
                                         }
                                     """)
                             )
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Validation failed",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = ErrorResponseWrapper.class
+                                    )
+                            )
                     )
+
             }
     )
+
     @PostMapping("/create")
     public ResponseEntity<?> createPost(
             @RequestBody @Valid PostCreateRequest request,
@@ -80,6 +93,16 @@ public class PostController {
                                           }
                                         }
                                     """)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Validation failed",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = ErrorResponseWrapper.class
+                                    )
                             )
                     )
             }

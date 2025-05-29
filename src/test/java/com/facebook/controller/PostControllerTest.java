@@ -68,7 +68,6 @@ public class PostControllerTest {
     @BeforeEach
     void setUp() {
         objectMapper = new ObjectMapper();
-        mockMvc = MockMvcBuilders.standaloneSetup(postController).build();
     }
 
     @Test
@@ -136,7 +135,7 @@ public class PostControllerTest {
     void deletePost_shouldReturn200_whenDeleted() throws Exception {
         Long postId = 1L;
 
-        // Немає потреби щось повертати, просто переконуємось, що метод викликаний
+        mockMvc = buildMockMvc(false);
         Mockito.doNothing().when(postService).deletePost(postId);
 
         mockMvc.perform(delete("/api/posts/{id}", postId))
