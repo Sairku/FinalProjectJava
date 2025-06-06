@@ -135,7 +135,7 @@ public class FriendControllerTest {
     @Test
     void respondToFriendRequest_invalidStatus_shouldReturnBadRequest() throws Exception {
         mockMvc.perform(get("/api/friends/respond/" + friendId + "/invalid"))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value(true))
                 .andExpect(jsonPath("$.message").value("Invalid status"));
 

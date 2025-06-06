@@ -119,6 +119,16 @@ public class FriendController {
                                             implementation = ErrorResponseWrapper.class
                                     )
                             )
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Bad respond status",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = ErrorResponseWrapper.class
+                                    )
+                            )
                     )
             }
     )
@@ -141,7 +151,7 @@ public class FriendController {
                     FriendStatus.DECLINED
             );
             default -> ResponseHandler.generateResponse(
-                    HttpStatus.BAD_REQUEST,
+                    HttpStatus.NOT_FOUND,
                     true,
                     "Invalid status",
                     null
@@ -149,6 +159,42 @@ public class FriendController {
         };
     }
 
+    @Operation(
+            summary = "Delete friend",
+            description = "Delete a friend from the user's friend list",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "201",
+                            description = "Friend removed",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = VoidSuccessResponseWrapper.class
+                                    )
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Validation failed",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = ErrorResponseWrapper.class
+                                    )
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Friend not found",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = ErrorResponseWrapper.class
+                                    )
+                            )
+                    )
+            }
+    )
     @DeleteMapping("/delete/{friendId}")
     public ResponseEntity<?> deleteFriend(@PathVariable Long friendId,
                                                @Parameter(hidden = true)
@@ -158,6 +204,32 @@ public class FriendController {
         return friendService.deleteFriend(userId, friendId);
     }
 
+    @Operation(
+            summary = "Get friends",
+            description = "Get all friends of the user",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Friends retrieved successfully",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = User.class
+                                    )
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "No friends found",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = ErrorResponseWrapper.class
+                                    )
+                            )
+                    )
+            }
+    )
     @GetMapping("/get-friends")
     public ResponseEntity<List<User>> getFriends(@Parameter(hidden = true)
                                                  @CurrentUser UserAuthDto currentUser) {
@@ -166,6 +238,32 @@ public class FriendController {
         return ResponseEntity.ok(friendService.getAllFriendUsers(userId));
     }
 
+    @Operation(
+            summary = "Get friend requests",
+            description = "Get all users who have sent friend requests to the user",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Friend requests retrieved successfully",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = User.class
+                                    )
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "No friend requests found",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = ErrorResponseWrapper.class
+                                    )
+                            )
+                    )
+            }
+    )
     @GetMapping("/get-requests")
     public ResponseEntity<List<User>> getRequests(@Parameter(hidden = true)
                                                   @CurrentUser UserAuthDto currentUser) {
@@ -174,6 +272,32 @@ public class FriendController {
         return ResponseEntity.ok(friendService.getAllUsersWhoHaveNotYetAccepted(userId));
     }
 
+    @Operation(
+            summary = "Get recommended friends",
+            description = "Get a list of recommended friends for the user",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Recommended friends retrieved successfully",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = User.class
+                                    )
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "No recommended friends found",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = ErrorResponseWrapper.class
+                                    )
+                            )
+                    )
+            }
+    )
     @GetMapping("/recommended")
     public ResponseEntity<List<User>> getRecommendedFriends(@Parameter(hidden = true)
                                                             @CurrentUser UserAuthDto currentUser) {
