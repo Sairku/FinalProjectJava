@@ -8,6 +8,18 @@ spring:
   profiles:
     active: local # Or prod based on your environment
 
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${EMAIL_SENDER_USERNAME}
+    password: ${EMAIL_SENDER_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
 springdoc:
   swagger-ui:
     path: /docs/api.html
