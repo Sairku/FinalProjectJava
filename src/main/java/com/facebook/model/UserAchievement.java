@@ -17,10 +17,10 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode(callSuper = true)
 public class UserAchievement extends AbstractEntity{
     @ManyToOne
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @ManyToOne
-    @JoinColumn(name = "achievement_id")
+    @JoinColumn(name = "achievement_id", nullable = false)
     private Achievement achievement;
 }
