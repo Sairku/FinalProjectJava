@@ -5,8 +5,11 @@ import com.facebook.dto.PostCreateRequest;
 import com.facebook.dto.PostResponse;
 import com.facebook.dto.PostUpdateRequest;
 import com.facebook.dto.UserAuthDto;
+import com.facebook.enums.Achievements;
+import com.facebook.model.User;
 import com.facebook.openapi.ErrorResponseWrapper;
 import com.facebook.service.PostService;
+import com.facebook.service.UserAchievementService;
 import com.facebook.util.ResponseHandler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -16,9 +19,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/posts")
@@ -27,6 +33,9 @@ import org.springframework.web.bind.annotation.*;
 public class PostController {
 
     private final PostService postService;
+    private final UserAchievementService userAchievementService;
+    private final ModelMapper modelMapper;
+    private final int AESTHETIC_DROP_CONSTANT = 5;
 
     @Operation(
             summary = "Create a new post",
@@ -70,6 +79,18 @@ public class PostController {
     ) {
         Long currentUserId = currentUser.getId();
         PostResponse response = postService.createPost(currentUserId, request);
+
+        List<PostResponse> postsOfUser = postService.getAllPostsOfUser(currentUserId);
+        if(postsOfUser.isEmpty())
+            userAchievementService.awardAchievement(
+                    modelMapper.map(currentUser, User.class),
+                    Achievements.BUZZ_STARTED.toString()
+            );
+        else if(postsOfUser.size() == AESTHETIC_DROP_CONSTANT)
+            userAchievementService.awardAchievement(
+                    modelMapper.map(currentUser,User.class),
+                    Achievements.AESTHETIC_DROP.toString()
+            );
 
         return ResponseHandler.generateResponse(HttpStatus.CREATED, false, "Post was created", response);
     }

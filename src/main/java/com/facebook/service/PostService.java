@@ -80,4 +80,29 @@ public class PostService {
 
         postRepository.delete(post);
     }
+
+    public List<PostResponse> getAllPostsOfUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found with ID: " + userId));
+
+        List<Post> posts = postRepository.findAllByUserId(userId)
+                .orElseThrow(() -> new NotFoundException("No posts found for user with ID: " + userId));
+
+        UserShortDto userDTO = new UserShortDto(user.getId(), user.getFirstName(), user.getLastName());
+
+        return posts.stream()
+                .map(post -> {
+                    List<String> images = post.getImages().stream()
+                            .map(PostImage::getUrl)
+                            .toList();
+                    return new PostResponse(
+                            userDTO,
+                            post.getDescription(),
+                            images,
+                            post.getCreatedDate()
+                    );
+                })
+                .toList();
+    }
+
 }

@@ -58,4 +58,22 @@ public class UserUpdateRequestDto {
             message = "Current city should be at least 2 characters"
     )
     private String currentCity;
+
+    public boolean areAllFieldsFilled() {
+        for (java.lang.reflect.Field field : this.getClass().getDeclaredFields()) {
+            field.setAccessible(true);
+            try {
+                Object value = field.get(this);
+                if (value == null) {
+                    return false;
+                }
+                if (value instanceof String && ((String) value).isBlank()) {
+                    return false;
+                }
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException("Could not access field: " + field.getName(), e);
+            }
+        }
+        return true;
+    }
 }

@@ -4,9 +4,13 @@ import com.facebook.annotation.CurrentUser;
 import com.facebook.dto.UserAuthDto;
 import com.facebook.dto.UserDetailsDto;
 import com.facebook.dto.UserUpdateRequestDto;
+import com.facebook.enums.Achievements;
+import com.facebook.model.User;
+import com.facebook.model.UserAchievement;
 import com.facebook.openapi.ErrorResponseWrapper;
 import com.facebook.openapi.NotFoundResponseWrapper;
 import com.facebook.openapi.UserDetailsWrapper;
+import com.facebook.service.UserAchievementService;
 import com.facebook.service.UserService;
 import com.facebook.util.ResponseHandler;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,6 +22,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +34,8 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Users API", description = "Endpoints for user operations")
 public class UserController {
     private final UserService userService;
+    private final UserAchievementService userAchievementService;
+    private final ModelMapper modelMapper;
 
     @Operation(
             summary = "Get user details",
@@ -120,6 +127,12 @@ public class UserController {
     ) {
         long currentUserId = currentUser.getId();
         UserDetailsDto updatedUser = userService.updateUser(currentUserId, userUpdateRequestDto);
+
+        if(userUpdateRequestDto.areAllFieldsFilled())
+            userAchievementService.awardAchievement(
+                    modelMapper.map(updatedUser, User.class),
+                    Achievements.PINK_PROFILE.toString()
+            );
 
         return ResponseHandler.generateResponse(
                 HttpStatus.OK,
