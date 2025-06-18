@@ -3,6 +3,7 @@ package com.facebook.service;
 import com.facebook.dto.*;
 import com.facebook.exception.NotFoundException;
 import com.facebook.model.Post;
+import com.facebook.model.PostImage;
 import com.facebook.model.User;
 import com.facebook.repository.PostRepository;
 import com.facebook.repository.UserRepository;
@@ -16,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -130,5 +132,70 @@ class PostServiceTest {
 
         assertThrows(NotFoundException.class, () -> postService.deletePost(999L));
     }
+
+    @Test
+    void getAllPostsOfUser_shouldReturnPostResponses() {
+        Post post1 = new Post();
+        post1.setId(1L);
+        post1.setDescription("First post");
+        post1.setUser(mockUser);
+
+        PostImage image1 = new PostImage();
+        image1.setUrl("img1.jpg");
+        image1.setPost(post1);
+
+        PostImage image2 = new PostImage();
+        image2.setUrl("img2.jpg");
+        image2.setPost(post1);
+
+        post1.setImages( new ArrayList<>(List.of(image1, image2)));
+
+        Post post2 = new Post();
+        post2.setId(2L);
+        post2.setDescription("Second post");
+        post2.setUser(mockUser);
+        post2.setImages( new ArrayList<>(List.of())); // no images
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(mockUser));
+        when(postRepository.findAllByUserId(1L)).thenReturn(Optional.of(List.of(post1, post2)));
+
+        List<PostResponse> responses = postService.getAllPostsOfUser(1L);
+
+        assertNotNull(responses);
+        assertEquals(2, responses.size());
+
+        PostResponse firstResponse = responses.get(0);
+        assertEquals("First post", firstResponse.getDescription());
+        assertEquals(2, firstResponse.getImages().size());
+
+        PostResponse secondResponse = responses.get(1);
+        assertEquals("Second post", secondResponse.getDescription());
+        assertTrue(secondResponse.getImages().isEmpty());
+
+        verify(userRepository).findById(1L);
+        verify(postRepository).findAllByUserId(1L);
+    }
+
+    @Test
+    void getAllPostsOfUser_shouldThrowNotFound_whenUserMissing() {
+        when(userRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> postService.getAllPostsOfUser(999L));
+
+        verify(userRepository).findById(999L);
+        verifyNoInteractions(postRepository);
+    }
+
+    @Test
+    void getAllPostsOfUser_shouldThrowNotFound_whenNoPostsFound() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(mockUser));
+        when(postRepository.findAllByUserId(1L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> postService.getAllPostsOfUser(1L));
+
+        verify(userRepository).findById(1L);
+        verify(postRepository).findAllByUserId(1L);
+    }
+
 
 }
