@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,23 +32,31 @@ public class FriendService {
     }
 
     // User trying to get a friend (like object Friend) by his friend's id (friendId)
-    public Friend getFriendById(Long friendId) {
-        return friendRepository.findById(friendId)
+    public Friend getFriendById(Long userId, Long friendId) {
+        return friendRepository.findByUserIdAndFriendId(userId, friendId)
                 .orElseThrow(() -> new NotFoundException("Friend not found"));
     }
 
     // User trying to get a friend (like object User) by his friend's id (friendId)
-    public User getUserWhoIsMayBeFriend(Long userId) {
-        return getFriendById(userId).getUser();
+    public User getUserWhoIsFriendById(Long userId, Long friendId) {
+        return getFriendById(userId, friendId).getFriend();
     }
 
     public List<Friend> getAllFriendRequests(Long userId) {
-       return friendRepository.findByUserId(userId);
+        return friendRepository.findByUserId(userId);
     }
 
     // Get all friends (like object Friend) of a user with 'userId'
     public List<Friend> getAllFriends(Long userId) {
         return friendRepository.findByStatusAndUserId(FriendStatus.ACCEPTED, userId);
+    }
+
+    // Get all friends (like object User) of a user with 'userId'
+    public List<User> getAllFriendUsers(Long userId) {
+        return friendRepository.findByStatusAndUserId(FriendStatus.ACCEPTED, userId)
+                .stream()
+                .map(Friend::getFriend)
+                .toList();
     }
 
     // Get all friends (like object Friend) to whom the user with 'userId' sent a request but not yet accepted
@@ -63,30 +72,26 @@ public class FriendService {
 
     // Get all friends (like object User) of a user with 'userId'
     public List<User> getAllUsersWhoAreFriends(Long userId) {
-        List<Friend> friends = getAllFriends(userId);
-        return userRepository.findAllById(friends.stream()
+        return friendRepository.findByStatusAndUserId(FriendStatus.ACCEPTED, userId)
+                .stream()
                 .map(Friend::getFriend)
-                .map(User::getId)
-                .toList());
+                .toList();
     }
 
     // Get all friends (like object User) to whom the user with 'userId' sent a request but not yet accepted
     public List<User> getAllUsersWhoHaveNotYetAccepted(Long userId) {
-        List<Friend> friends = getAllFriendsWhoHaveNotYetAccepted(userId);
-        return userRepository.findAllById(friends.stream()
+        return friendRepository.findByStatusAndUserId(FriendStatus.PENDING, userId)
+                .stream()
                 .map(Friend::getFriend)
-                .map(User::getId)
-                .toList());
+                .toList();
     }
 
     // Get all friends (like object User)
     // who sent a request to the user with 'userId' but user hasn't accepted them yet
     public List<User> getAllUsersWhoSentRequest(Long userId) {
-        List<Friend> friends = getAllFriendsWhoSentRequest(userId);
-        return userRepository.findAllById(friends.stream()
-                .map(Friend::getUser)
-                .map(User::getId)
-                .toList());
+        return getAllFriendsWhoSentRequest(userId).stream()
+                .map(Friend::getFriend)
+                .toList();
     }
 
     public ResponseEntity<Object> addFriendRequest(Long userId, Long friendId) {
@@ -96,25 +101,8 @@ public class FriendService {
         User friend = userRepository.findById(friendId)
                 .orElseThrow(() -> new NotFoundException("Friend not found"));
 
-//        if (userRepository.findById(userId).isEmpty()) {
-//            return ResponseHandler.generateResponse(
-//                HttpStatus.BAD_REQUEST,
-//                true,
-//                "User not found",
-//                null
-//            );
-//        }
-//        if (userRepository.findById(friendId).isEmpty()) {
-//            return ResponseHandler.generateResponse(
-//                    HttpStatus.BAD_REQUEST,
-//                    true,
-//                    "Friend not found",
-//                    null
-//            );
-//        }
-
-        Optional<Friend> existingRequest = friendRepository.findByUserIdAndFriendId(userId, friendId);
-        if (existingRequest.isPresent()) {
+        if (friendRepository.findByUserIdAndFriendId(userId, friendId).isPresent() ||
+                friendRepository.findByUserIdAndFriendId(friendId, userId).isPresent()) {
             return ResponseHandler.generateResponse(
                     HttpStatus.BAD_REQUEST,
                     true,
@@ -136,10 +124,10 @@ public class FriendService {
     public ResponseEntity<Object> responseToFriendRequest(Long userId, Long friendId ,FriendStatus status) {
         if (userRepository.findById(userId).isEmpty()) {
             return ResponseHandler.generateResponse(
-                HttpStatus.BAD_REQUEST,
-                true,
-                "User not found",
-                null
+                    HttpStatus.BAD_REQUEST,
+                    true,
+                    "User not found",
+                    null
             );
         }
         if (userRepository.findById(friendId).isEmpty()) {
@@ -164,11 +152,6 @@ public class FriendService {
         if (status == FriendStatus.ACCEPTED) {
             existingRequest.get().setStatus(FriendStatus.ACCEPTED);
             friendRepository.save(existingRequest.get());
-
-            // Create a reciprocal friend request
-            Friend reciprocalRequest = new Friend(FriendStatus.ACCEPTED, existingRequest.get().getFriend(), existingRequest.get().getUser(), null);
-            friendRepository.save(reciprocalRequest);
-
             log.info("Friend request from user {} to user {} accepted", userId, friendId);
             return ResponseHandler.generateResponse(
                     HttpStatus.OK,
@@ -198,10 +181,10 @@ public class FriendService {
     public ResponseEntity<Object> deleteFriend(Long userId, Long friendId) {
         if (userRepository.findById(userId).isEmpty()) {
             return ResponseHandler.generateResponse(
-                HttpStatus.BAD_REQUEST,
-                true,
-                "User not found",
-                null
+                    HttpStatus.BAD_REQUEST,
+                    true,
+                    "User not found",
+                    null
             );
         }
         if (userRepository.findById(friendId).isEmpty()) {
@@ -231,5 +214,28 @@ public class FriendService {
                 "Friend deleted",
                 null
         );
+    }
+
+    public List<User> getRecommendedFriends(Long userId) {
+        List<User> friends = getAllUsersWhoAreFriends(userId);
+
+        List<User> result = new ArrayList<>();
+        boolean enough = false;
+
+        for (User friend : friends) {
+            List<User> friendsOfFriend = getAllUsersWhoAreFriends(friend.getId());
+            for (User friendOfFriend : friendsOfFriend){
+                if (friendOfFriend.getId() != userId && !result.contains(friendOfFriend) && !friends.contains(friendOfFriend))
+                    result.add(friendOfFriend);
+                if (result.size() >= 40)
+                    enough = true;
+                if (enough)
+                    break;
+            }
+            if (enough)
+                break;
+        }
+
+        return result;
     }
 }
