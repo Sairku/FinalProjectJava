@@ -1,10 +1,9 @@
 package com.facebook.controller;
 
+import com.facebook.config.GlobalExceptionHandler;
 import com.facebook.dto.*;
-import com.facebook.enums.Provider;
+import com.facebook.enums.Gender;
 import com.facebook.service.AuthService;
-//import com.facebook.service.EmailService;
-//import com.facebook.service.VerificationTokenService;
 import com.facebook.service.EmailService;
 import com.facebook.service.VerificationTokenService;
 import com.facebook.util.JwtUtil;
@@ -26,7 +25,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.Calendar;
 import java.util.GregorianCalendar;
-import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -64,6 +62,7 @@ class AuthControllerTest {
         objectMapper = new ObjectMapper();
         mockMvc = MockMvcBuilders
                 .standaloneSetup(authController)
+                .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
 
         mockLoginResponse = new LoginResponseDto();
@@ -73,14 +72,14 @@ class AuthControllerTest {
     }
 
     @Test
-    void register_shouldReturn201_whenNewUser() throws Exception {
+    void testRegisterSuccess() throws Exception {
         RegisterRequestDto request = new RegisterRequestDto(
                 "test@example.com",
                 "pass1232323",
                 "John",
                 "Doe",
-                new GregorianCalendar(2000, Calendar.JANUARY, 1).getTime(), // точно в минулому
-                "male" // перевір, які значення приймає gender
+                new GregorianCalendar(2000, Calendar.JANUARY, 1).getTime(),
+                Gender.MALE.name()
         );
 
         when(authService.userByEmailExists("test@example.com")).thenReturn(false);
@@ -98,14 +97,14 @@ class AuthControllerTest {
 
 
     @Test
-    void register_shouldReturn400_whenEmailExists() throws Exception {
+    void testRegisterEmailExists() throws Exception {
         RegisterRequestDto request = new RegisterRequestDto(
                 "existing@example.com",
                 "pass1232323",
                 "John",
                 "Doe",
                 new GregorianCalendar(2000, Calendar.JANUARY, 1).getTime(),
-                "male"
+                Gender.MALE.name()
         );
 
         when(authService.userByEmailExists("existing@example.com")).thenReturn(true);
@@ -117,57 +116,57 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.message").value("Email already exists"));
     }
 
-//    @Test
-//    void testRequestPasswordReset() throws Exception {
-//        String email = "test@example.com";
-//        String token = "mocked-token";
-//        PasswordResetRequestDto passwordResetRequest = new PasswordResetRequestDto(email);
-//
-//        when(verificationTokenService.createPasswordResetToken(email)).thenReturn(token);
-//
-//        mockMvc.perform(post("/api/auth/request-reset-password")
-//                        .contentType(MediaType.APPLICATION_JSON)
-//                        .content(objectMapper.writeValueAsString(passwordResetRequest)))
-//                .andExpect(status().isOk())
-//                .andExpect(jsonPath("$.error").value(false))
-//                .andExpect(jsonPath("$.message").value("Password reset link sent to your email test@example.com"));
-//
-//        verify(emailService, times(1)).sendEmail(eq(email), anyString(), contains(token));
-//    }
+    @Test
+    void testRequestPasswordReset() throws Exception {
+        String email = "test@example.com";
+        String token = "mocked-token";
+        PasswordResetRequestDto passwordResetRequest = new PasswordResetRequestDto(email);
 
-//    @Test
-//    void testResetPasswordSuccess() throws Exception {
-//        PasswordResetDto passwordReset = new PasswordResetDto();
-//        passwordReset.setToken("token123");
-//        passwordReset.setNewPassword("newPass123");
-//        passwordReset.setConfirmPassword("newPass123");
-//
-//        mockMvc.perform(post("/api/auth/reset-password")
-//                        .contentType(MediaType.APPLICATION_JSON)
-//                        .content(objectMapper.writeValueAsString(passwordReset)))
-//                .andExpect(status().isOk())
-//                .andExpect(jsonPath("$.error").value(false))
-//                .andExpect(jsonPath("$.message").value("Password reset successfully"));
-//
-//        verify(authService, times(1)).resetPassword("token123", "newPass123", "newPass123");
-//    }
+        when(verificationTokenService.createPasswordResetToken(email)).thenReturn(token);
 
-//    @Test
-//    void testResetPasswordMismatch() throws Exception {
-//        PasswordResetDto passwordReset = new PasswordResetDto();
-//        passwordReset.setToken("token123");
-//        passwordReset.setNewPassword("newPass123");
-//        passwordReset.setConfirmPassword("wrongPass");
-//
-//        doThrow(new IllegalArgumentException("Passwords do not match"))
-//                .when(authService)
-//                .resetPassword("token123", "newPass123", "wrongPass");
-//
-//        mockMvc.perform(post("/api/auth/reset-password")
-//                        .contentType(MediaType.APPLICATION_JSON)
-//                        .content(objectMapper.writeValueAsString(passwordReset)))
-//                .andExpect(status().isBadRequest());
-//
-//        verify(authService).resetPassword("token123", "newPass123", "wrongPass");
-//    }
+        mockMvc.perform(post("/api/auth/request-reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(passwordResetRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.error").value(false))
+                .andExpect(jsonPath("$.message").value("Password reset link sent to your email test@example.com"));
+
+        verify(emailService, times(1)).sendEmail(eq(email), anyString(), contains(token));
+    }
+
+    @Test
+    void testResetPasswordSuccess() throws Exception {
+        PasswordResetDto passwordReset = new PasswordResetDto();
+        passwordReset.setToken("token123");
+        passwordReset.setNewPassword("newPass123");
+        passwordReset.setConfirmPassword("newPass123");
+
+        mockMvc.perform(post("/api/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(passwordReset)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.error").value(false))
+                .andExpect(jsonPath("$.message").value("Password reset successfully"));
+
+        verify(authService, times(1)).resetPassword("token123", "newPass123", "newPass123");
+    }
+
+    @Test
+    void testResetPasswordMismatch() throws Exception {
+        PasswordResetDto passwordReset = new PasswordResetDto();
+        passwordReset.setToken("token123");
+        passwordReset.setNewPassword("newPass123");
+        passwordReset.setConfirmPassword("wrongPass");
+
+        doThrow(new IllegalArgumentException("Passwords do not match"))
+                .when(authService)
+                .resetPassword("token123", "newPass123", "wrongPass");
+
+        mockMvc.perform(post("/api/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(passwordReset)))
+                .andExpect(status().isBadRequest());
+
+        verify(authService).resetPassword("token123", "newPass123", "wrongPass");
+    }
 }
