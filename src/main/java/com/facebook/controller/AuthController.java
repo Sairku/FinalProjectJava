@@ -4,8 +4,11 @@ import com.facebook.dto.*;
 import com.facebook.enums.Provider;
 import com.facebook.openapi.ErrorResponseWrapper;
 import com.facebook.openapi.LoginResponseWrapper;
+import com.facebook.openapi.VoidSuccessResponseWrapper;
 import com.facebook.service.AuthService;
 import com.facebook.service.CustomUserDetailsService;
+import com.facebook.service.EmailService;
+import com.facebook.service.VerificationTokenService;
 import com.facebook.util.GoogleTokenVerifier;
 import com.facebook.util.JwtUtil;
 import com.facebook.util.ResponseHandler;
@@ -16,8 +19,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -31,14 +35,19 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @RestController
 @RequestMapping("/api/auth")
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Tag(name = "Authentication API", description = "Endpoints for registration and login")
 public class AuthController {
     private final AuthService authService;
     private final CustomUserDetailsService userDetailsService;
+    private final VerificationTokenService verificationTokenService;
+    private final EmailService emailService;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final GoogleTokenVerifier googleTokenVerifier;
+
+    @Value("${app.frontend.url}")
+    private String frontendUrl;
 
     @Operation(
             summary = "Google Login",
@@ -102,7 +111,7 @@ public class AuthController {
             }
 
             Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(email,null)
+                    new UsernamePasswordAuthenticationToken(email, null)
             );
             String jwtToken = jwtUtil.generateToken(email);
 
@@ -245,6 +254,98 @@ public class AuthController {
                 false,
                 "User logged in successfully",
                 new LoginResponseDto(userDetails.getId(), userDetails.getUsername(), jwtToken)
+        );
+    }
+
+    @Operation(
+            summary = "Request Password Reset",
+            description = "Request a password reset link",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Password reset link sent to email",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = VoidSuccessResponseWrapper.class
+                                    )
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Email not found",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = ErrorResponseWrapper.class
+                                    )
+                            )
+                    )
+            }
+    )
+    @PostMapping("/request-reset-password")
+    public ResponseEntity<?> requestPasswordReset(@RequestBody @Valid PasswordResetRequestDto passwordResetRequest) {
+        String email = passwordResetRequest.getEmail();
+        String token = verificationTokenService.createPasswordResetToken(email);
+
+        log.info("Password reset token created for user with email: {}", email);
+
+        String resetLink = frontendUrl + "/reset-password?token=" + token;
+        String subject = "Reset your password";
+        String body = "Hello!\n\nTo reset your password, click the link below:\n" + resetLink +
+                "\n\nIf you didn't request this, ignore the email.\n\nThanks!";
+
+        emailService.sendEmail(email, subject, body);
+
+        return ResponseHandler.generateResponse(
+                HttpStatus.OK,
+                false,
+                "Password reset link sent to your email " + passwordResetRequest.getEmail(),
+                null
+        );
+    }
+
+    @Operation(
+            summary = "Reset Password",
+            description = "Reset password using a token",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Password reset successfully",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = VoidSuccessResponseWrapper.class
+                                    )
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Invalid token or passwords do not match",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = ErrorResponseWrapper.class
+                                    )
+                            )
+                    )
+            }
+    )
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody @Valid PasswordResetDto passwordReset) {
+        authService.resetPassword(
+                passwordReset.getToken(),
+                passwordReset.getNewPassword(),
+                passwordReset.getConfirmPassword()
+        );
+
+        log.info("Password reset successfully for token: {}", passwordReset.getToken());
+
+        return ResponseHandler.generateResponse(
+                HttpStatus.OK,
+                false,
+                "Password reset successfully",
+                null
         );
     }
 }
