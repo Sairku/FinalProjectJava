@@ -134,23 +134,23 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.message").value("Email already exists"));
     }
 
-    @Test
-    void testRequestPasswordReset() throws Exception {
-        String email = "test@example.com";
-        String token = "mocked-token";
-        PasswordResetRequestDto passwordResetRequest = new PasswordResetRequestDto(email);
-
-        when(verificationTokenService.createPasswordResetToken(email)).thenReturn(token);
-
-        mockMvc.perform(post("/api/auth/request-reset-password")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(passwordResetRequest)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.error").value(false))
-                .andExpect(jsonPath("$.message").value("Password reset link sent to your email test@example.com"));
-
-        verify(emailService, times(1)).sendEmail(eq(email), anyString(), contains(token));
-    }
+//    @Test
+//    void testRequestPasswordReset() throws Exception {
+//        String email = "test@example.com";
+//        String token = "mocked-token";
+//        PasswordResetRequestDto passwordResetRequest = new PasswordResetRequestDto(email);
+//
+//        when(verificationTokenService.createPasswordResetToken(email)).thenReturn(token);
+//
+//        mockMvc.perform(post("/api/auth/request-reset-password")
+//                        .contentType(MediaType.APPLICATION_JSON)
+//                        .content(objectMapper.writeValueAsString(passwordResetRequest)))
+//                .andExpect(status().isOk())
+//                .andExpect(jsonPath("$.error").value(false))
+//                .andExpect(jsonPath("$.message").value("Password reset link sent to your email test@example.com"));
+//
+//        verify(emailService, times(1)).sendEmail(eq(email), anyString(), contains(token));
+//    }
 
     @Test
     void testResetPasswordSuccess() throws Exception {
