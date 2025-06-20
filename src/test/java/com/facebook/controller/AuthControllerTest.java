@@ -5,6 +5,8 @@ import com.facebook.enums.Provider;
 import com.facebook.service.AuthService;
 //import com.facebook.service.EmailService;
 //import com.facebook.service.VerificationTokenService;
+import com.facebook.service.EmailService;
+import com.facebook.service.VerificationTokenService;
 import com.facebook.util.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +39,12 @@ class AuthControllerTest {
 
     @Mock
     private AuthService authService;
+
+    @Mock
+    private EmailService emailService;
+
+    @Mock
+    private VerificationTokenService verificationTokenService;
 
     @Mock
     private AuthenticationManager authenticationManager;
