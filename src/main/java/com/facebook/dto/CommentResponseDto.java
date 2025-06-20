@@ -5,15 +5,13 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class PostResponse {
+public class CommentResponseDto {
+    private Long id;
     private UserShortDto user;
-    private String description;
-    private List<String> images = new ArrayList<>();
-    private LocalDateTime createdDate;
+    private String text;
+    private LocalDateTime createdAt;
 }

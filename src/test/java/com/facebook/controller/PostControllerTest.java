@@ -74,17 +74,17 @@ public class PostControllerTest {
     void createPost_shouldReturn201() throws Exception {
         mockMvc = buildMockMvc(true);
 
-        PostCreateRequest request = new PostCreateRequest();
+        PostCreateRequestDto request = new PostCreateRequestDto();
         request.setDescription("Test post");
         request.setImages(List.of("http://image.com/test.jpg"));
 
-        PostResponse response = new PostResponse();
+        PostResponseDto response = new PostResponseDto();
         response.setDescription(request.getDescription());
         response.setImages(request.getImages());
         response.setUser(new UserShortDto(userId, "John", "Doe"));
 
         // замість @CurrentUser — передаємо явно
-        Mockito.when(postService.createPost(eq(userId), any(PostCreateRequest.class))).thenReturn(response);
+        Mockito.when(postService.createPost(eq(userId), any(PostCreateRequestDto.class))).thenReturn(response);
 
         mockMvc.perform(post("/api/posts/create")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -101,11 +101,11 @@ public class PostControllerTest {
 
         Long postId = 1L;
 
-        PostUpdateRequest request = new PostUpdateRequest();
+        PostUpdateRequestDto request = new PostUpdateRequestDto();
         request.setDescription("Updated description");
         request.setImages(List.of("http://image.com/updated.jpg"));
 
-        PostResponse response = new PostResponse();
+        PostResponseDto response = new PostResponseDto();
         response.setDescription(request.getDescription());
         response.setImages(request.getImages());
 
@@ -124,7 +124,7 @@ public class PostControllerTest {
     void createPost_shouldReturn400_whenInvalidRequest() throws Exception {
         mockMvc = buildMockMvc(false);
 
-        PostCreateRequest invalidRequest = new PostCreateRequest(); // порожній
+        PostCreateRequestDto invalidRequest = new PostCreateRequestDto(); // порожній
 
         mockMvc.perform(post("/api/posts/create")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -141,6 +141,77 @@ public class PostControllerTest {
         mockMvc.perform(delete("/api/posts/{id}", postId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Post was deleted"))
+                .andExpect(jsonPath("$.error").value(false))
+                .andExpect(jsonPath("$.data").doesNotExist());
+    }
+
+    @Test
+    void likePost_shouldReturn200WithLikesCount() throws Exception {
+        mockMvc = buildMockMvc(true);
+        Long postId = 1L;
+        int likesCount = 5;
+
+        when(postService.likePost(postId, userId)).thenReturn(likesCount);
+
+        mockMvc.perform(post("/api/posts/{id}/like", postId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Post liked successfully"))
+                .andExpect(jsonPath("$.error").value(false))
+                .andExpect(jsonPath("$.data").value(5));
+    }
+
+    @Test
+    void commentPost_shouldReturn201WithCommentData() throws Exception {
+        mockMvc = buildMockMvc(true);
+        Long postId = 1L;
+        CommentRequestDto request = new CommentRequestDto();
+        request.setText("Great post!");
+
+        CommentResponseDto commentResponse = new CommentResponseDto();
+        commentResponse.setId(1L);
+        commentResponse.setText("Great post!");
+        commentResponse.setUser(new UserShortDto(userId, "John", "Doe"));
+
+        when(postService.addComment(postId, userId, "Great post!")).thenReturn(commentResponse);
+
+        mockMvc.perform(post("/api/posts/{id}/comments", postId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.message").value("Comment added successfully"))
+                .andExpect(jsonPath("$.error").value(false))
+                .andExpect(jsonPath("$.data.text").value("Great post!"));
+    }
+
+    @Test
+    void getPostComments_shouldReturn200WithCommentList() throws Exception {
+        mockMvc = buildMockMvc(false);
+        Long postId = 1L;
+
+        List<CommentResponseDto> comments = List.of(
+                new CommentResponseDto(1L, new UserShortDto(userId, "John", "Doe"), "Nice!", null)
+        );
+
+        when(postService.getComments(postId)).thenReturn(comments);
+
+        mockMvc.perform(get("/api/posts/{id}/comments", postId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Comments retrieved successfully"))
+                .andExpect(jsonPath("$.error").value(false))
+                .andExpect(jsonPath("$.data[0].text").value("Nice!"));
+    }
+
+    @Test
+    void deleteComment_shouldReturn200_whenSuccessful() throws Exception {
+        mockMvc = buildMockMvc(true);
+        Long postId = 1L;
+        Long commentId = 10L;
+
+        Mockito.doNothing().when(postService).deleteComment(postId, userId, commentId);
+
+        mockMvc.perform(delete("/api/posts/{id}/comments/{commentId}", postId, commentId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Comment deleted successfully"))
                 .andExpect(jsonPath("$.error").value(false))
                 .andExpect(jsonPath("$.data").doesNotExist());
     }
