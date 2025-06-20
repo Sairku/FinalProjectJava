@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +21,7 @@ public class PostService {
     private final UserRepository userRepository;
     private final LikeRepository likeRepository;
     private final CommentRepository commentRepository;
+    private final UserAchievementService userAchievementService;
 
     public PostResponseDto createPost(Long userId, PostCreateRequestDto request) {
         User user = userRepository.findById(userId)
@@ -36,6 +38,25 @@ public class PostService {
         });
 
         Post savedPost = postRepository.save(post);
+        Optional<List<Post>> optionalPosts = postRepository.findAllByUserId(userId);
+        List<Post> posts = optionalPosts.orElse(List.of());
+        int postCount = posts.size();
+
+        String firstPostAchievement = "Buzz Started";
+        String fivePostsWithPhotosAchievement = "Aesthetic Drop";
+
+        if (postCount == 1 && !userAchievementService.userHaveAchievement(user, firstPostAchievement)) {
+            userAchievementService.awardAchievement(user, firstPostAchievement);
+        }
+
+        if (postCount >= 1) {
+            long postsWithImages = posts.stream().filter(somePost-> somePost.getImages()!= null && !post.getImages().isEmpty())
+                    .count();
+            if (postsWithImages == 5  && !userAchievementService.userHaveAchievement(user, fivePostsWithPhotosAchievement)) {
+                userAchievementService.awardAchievement(user, fivePostsWithPhotosAchievement);
+            }
+        }
+
 
         UserShortDto userDTO = new UserShortDto(user.getId(), user.getFirstName(), user.getLastName());
         List<String> images = savedPost.getImages().stream()

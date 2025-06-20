@@ -58,4 +58,6 @@ public class UserUpdateRequestDto {
             message = "Current city should be at least 2 characters"
     )
     private String currentCity;
+
+
 }
