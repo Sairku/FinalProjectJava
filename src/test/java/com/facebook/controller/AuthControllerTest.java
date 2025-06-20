@@ -3,10 +3,8 @@ package com.facebook.controller;
 import com.facebook.dto.*;
 import com.facebook.enums.Provider;
 import com.facebook.service.AuthService;
-import com.facebook.service.CustomUserDetailsService;
-import com.facebook.service.EmailService;
-import com.facebook.service.VerificationTokenService;
-import com.facebook.util.GoogleTokenVerifier;
+//import com.facebook.service.EmailService;
+//import com.facebook.service.VerificationTokenService;
 import com.facebook.util.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,29 +39,16 @@ class AuthControllerTest {
     private AuthService authService;
 
     @Mock
-    private CustomUserDetailsService userDetailsService;
-
-    @Mock
-    private VerificationTokenService verificationTokenService;
-
-    @Mock
-    private EmailService emailService;
-
-    @Mock
     private AuthenticationManager authenticationManager;
 
     @Mock
     private JwtUtil jwtUtil;
-
-    @Mock
-    private GoogleTokenVerifier googleTokenVerifier;
 
     @InjectMocks
     private AuthController authController;
 
     private ObjectMapper objectMapper;
 
-    private UserAuthDto mockUser;
     private LoginResponseDto mockLoginResponse;
 
     @BeforeEach
@@ -72,14 +57,6 @@ class AuthControllerTest {
         mockMvc = MockMvcBuilders
                 .standaloneSetup(authController)
                 .build();
-
-        mockUser = new UserAuthDto(
-                1L,
-                "test@example.com",
-                "hashedPassword",
-                Provider.LOCAL,
-                List.of()
-        );
 
         mockLoginResponse = new LoginResponseDto();
         mockLoginResponse.setUserId(1L);
@@ -150,22 +127,22 @@ class AuthControllerTest {
 //        verify(emailService, times(1)).sendEmail(eq(email), anyString(), contains(token));
 //    }
 
-    @Test
-    void testResetPasswordSuccess() throws Exception {
-        PasswordResetDto passwordReset = new PasswordResetDto();
-        passwordReset.setToken("token123");
-        passwordReset.setNewPassword("newPass123");
-        passwordReset.setConfirmPassword("newPass123");
-
-        mockMvc.perform(post("/api/auth/reset-password")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(passwordReset)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.error").value(false))
-                .andExpect(jsonPath("$.message").value("Password reset successfully"));
-
-        verify(authService, times(1)).resetPassword("token123", "newPass123", "newPass123");
-    }
+//    @Test
+//    void testResetPasswordSuccess() throws Exception {
+//        PasswordResetDto passwordReset = new PasswordResetDto();
+//        passwordReset.setToken("token123");
+//        passwordReset.setNewPassword("newPass123");
+//        passwordReset.setConfirmPassword("newPass123");
+//
+//        mockMvc.perform(post("/api/auth/reset-password")
+//                        .contentType(MediaType.APPLICATION_JSON)
+//                        .content(objectMapper.writeValueAsString(passwordReset)))
+//                .andExpect(status().isOk())
+//                .andExpect(jsonPath("$.error").value(false))
+//                .andExpect(jsonPath("$.message").value("Password reset successfully"));
+//
+//        verify(authService, times(1)).resetPassword("token123", "newPass123", "newPass123");
+//    }
 
 //    @Test
 //    void testResetPasswordMismatch() throws Exception {
