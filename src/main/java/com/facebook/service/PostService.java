@@ -2,24 +2,26 @@ package com.facebook.service;
 
 import com.facebook.dto.*;
 import com.facebook.exception.NotFoundException;
-import com.facebook.model.Post;
-import com.facebook.model.PostImage;
-import com.facebook.model.User;
+import com.facebook.model.*;
+import com.facebook.repository.CommentRepository;
+import com.facebook.repository.LikeRepository;
 import com.facebook.repository.PostRepository;
 import com.facebook.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class PostService {
-
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final LikeRepository likeRepository;
+    private final CommentRepository commentRepository;
 
-    public PostResponse createPost(Long userId, PostCreateRequest request) {
+    public PostResponseDto createPost(Long userId, PostCreateRequestDto request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
@@ -40,10 +42,17 @@ public class PostService {
                 .map(PostImage::getUrl)
                 .toList();
 
-        return new PostResponse(userDTO, savedPost.getDescription(), images, savedPost.getCreatedDate());
+        return new PostResponseDto(
+                userDTO,
+                savedPost.getDescription(),
+                images,
+                savedPost.getCreatedDate(),
+                0,
+                0
+        );
     }
 
-    public PostResponse updatePost(long postId, PostUpdateRequest request) {
+    public PostResponseDto updatePost(long postId, PostUpdateRequestDto request) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new NotFoundException("Not found post with ID: " + postId));
 
@@ -66,11 +75,13 @@ public class PostService {
                 .map(PostImage::getUrl)
                 .toList();
 
-        return new PostResponse(
+        return new PostResponseDto(
                 userDTO,
                 updatedPost.getDescription(),
                 images,
-                updatedPost.getCreatedDate()
+                updatedPost.getCreatedDate(),
+                updatedPost.getLikes().size(),
+                updatedPost.getComments().size()
         );
     }
 
@@ -81,28 +92,92 @@ public class PostService {
         postRepository.delete(post);
     }
 
-    public List<PostResponse> getAllPostsOfUser(Long userId) {
+    public int likePost(Long postId, Long userId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new NotFoundException("Not found post with ID: " + postId));
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        Like like = likeRepository.findByUserIdAndPostId(userId, postId)
+                .orElse(null);
+
+        if (like != null) {
+            post.getLikes().remove(like);
+        } else {
+            Like likeNew = new Like();
+            likeNew.setPost(post);
+            likeNew.setUser(user);
+
+            post.getLikes().add(likeNew);
+        }
+
+        postRepository.save(post);
+
+        return post.getLikes().size();
+    }
+
+    public CommentResponseDto addComment(Long postId, Long userId, String text) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new NotFoundException("Not found post with ID: " + postId));
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found with ID: " + userId));
 
-        List<Post> posts = postRepository.findAllByUserId(userId)
-                .orElseThrow(() -> new NotFoundException("No posts found for user with ID: " + userId));
+        Comment comment = new Comment();
+        comment.setPost(post);
+        comment.setUser(user);
+        comment.setText(text);
 
-        UserShortDto userDTO = new UserShortDto(user.getId(), user.getFirstName(), user.getLastName());
+        post.getComments().add(comment);
+        postRepository.save(post);
 
-        return posts.stream()
-                .map(post -> {
-                    List<String> images = post.getImages().stream()
-                            .map(PostImage::getUrl)
-                            .toList();
-                    return new PostResponse(
-                            userDTO,
-                            post.getDescription(),
-                            images,
-                            post.getCreatedDate()
+        return new CommentResponseDto(
+                comment.getId(),
+                new UserShortDto(user.getId(), user.getFirstName(), user.getLastName()),
+                comment.getText(),
+                comment.getCreatedDate()
+        );
+    }
+
+    public List<CommentResponseDto> getComments(Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new NotFoundException("Not found post with ID: " + postId));
+
+        if (post.getComments().isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        return post.getComments().stream()
+                .map(comment -> {
+                    User user = comment.getUser();
+
+                    return new CommentResponseDto(
+                            comment.getId(),
+                            new UserShortDto(user.getId(), user.getFirstName(), user.getLastName()),
+                            comment.getText(),
+                            comment.getCreatedDate()
                     );
                 })
                 .toList();
     }
 
+    public void deleteComment(Long postId, Long userId, Long commentId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new NotFoundException("Not found post with ID: " + postId));
+
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new NotFoundException("Not found comment with ID: " + commentId));
+
+        if (!post.getComments().contains(comment)) {
+            throw new IllegalArgumentException("Comment does not belong to the post");
+        }
+
+        if (!comment.getUser().getId().equals(userId)) {
+            throw new IllegalArgumentException("User does not have permission to delete this comment");
+        }
+
+        post.getComments().remove(comment);
+        commentRepository.delete(comment);
+    }
 }
