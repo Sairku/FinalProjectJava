@@ -34,8 +34,6 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Users API", description = "Endpoints for user operations")
 public class UserController {
     private final UserService userService;
-    private final UserAchievementService userAchievementService;
-    private final ModelMapper modelMapper;
 
     @Operation(
             summary = "Get user details",
@@ -127,12 +125,6 @@ public class UserController {
     ) {
         long currentUserId = currentUser.getId();
         UserDetailsDto updatedUser = userService.updateUser(currentUserId, userUpdateRequestDto);
-
-        if(userUpdateRequestDto.areAllFieldsFilled())
-            userAchievementService.awardAchievement(
-                    modelMapper.map(updatedUser, User.class),
-                    Achievements.PINK_PROFILE.toString()
-            );
 
         return ResponseHandler.generateResponse(
                 HttpStatus.OK,

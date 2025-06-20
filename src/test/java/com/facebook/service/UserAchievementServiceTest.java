@@ -77,7 +77,7 @@ class UserAchievementServiceTest {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> service.awardAchievement(user, "Unknown"));
 
-        assertEquals("Unknown achievement code: Unknown", ex.getMessage());
+        assertEquals("Unknown achievement name: Unknown", ex.getMessage());
     }
 
     @Test
@@ -114,4 +114,35 @@ class UserAchievementServiceTest {
         assertTrue(dtos.isEmpty());
         verify(achievementRepository).findAllById(List.of());
     }
+
+    @Test
+    void userHaveAchievement_shouldReturnTrue_whenAchievementExists() {
+        Achievement achievement = new Achievement("Pink Profile", "Completed your profile", false);
+        achievement.setId(1L);
+
+        when(userAchievementRepository.findAllByUser(user)).thenReturn(
+                Optional.of(List.of(new UserAchievement(user, achievement)))
+        );
+        when(achievementRepository.findAllById(List.of(1L))).thenReturn(List.of(achievement));
+
+        boolean hasAchievement = service.userHaveAchievement(user, "Pink Profile");
+
+        assertTrue(hasAchievement);
+    }
+
+    @Test
+    void userHaveAchievement_shouldReturnFalse_whenAchievementNotExists() {
+        Achievement achievement = new Achievement("Other Achievement", "Desc", false);
+        achievement.setId(2L);
+
+        when(userAchievementRepository.findAllByUser(user)).thenReturn(
+                Optional.of(List.of(new UserAchievement(user, achievement)))
+        );
+        when(achievementRepository.findAllById(List.of(2L))).thenReturn(List.of(achievement));
+
+        boolean hasAchievement = service.userHaveAchievement(user, "Pink Profile");
+
+        assertFalse(hasAchievement);
+    }
+
 }

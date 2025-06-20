@@ -35,6 +35,9 @@ public class UserServiceTest {
     @Mock
     private ModelMapper modelMapper;
 
+    @Mock
+    private UserAchievementService userAchievementService;
+
     @InjectMocks
     private UserService userService;
 
@@ -214,4 +217,24 @@ public class UserServiceTest {
 
         assertThrows(NotFoundException.class, () -> userService.getUserDetails(1L, 1L));
     }
+
+    @Test
+    void testFindUserById_success() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        User foundUser = userService.findUserById(1L);
+
+        assertNotNull(foundUser);
+        assertEquals(1L, foundUser.getId());
+        verify(userRepository, times(1)).findById(1L);
+    }
+
+    @Test
+    void testFindUserById_notFound() {
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> userService.findUserById(1L));
+        verify(userRepository, times(1)).findById(1L);
+    }
+
 }
