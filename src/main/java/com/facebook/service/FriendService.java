@@ -139,7 +139,7 @@ public class FriendService {
             );
         }
 
-        Optional<Friend> existingRequest = friendRepository.findByUserIdAndFriendId(userId, friendId);
+        Optional<Friend> existingRequest = friendRepository.findByUserIdAndFriendId(friendId, userId);
         if (existingRequest.isEmpty()) {
             return ResponseHandler.generateResponse(
                     HttpStatus.BAD_REQUEST,
@@ -152,7 +152,7 @@ public class FriendService {
         if (status == FriendStatus.ACCEPTED) {
             existingRequest.get().setStatus(FriendStatus.ACCEPTED);
             friendRepository.save(existingRequest.get());
-            log.info("Friend request from user {} to user {} accepted", userId, friendId);
+            log.info("Friend request from user {} to user {} accepted", friendId, userId);
             return ResponseHandler.generateResponse(
                     HttpStatus.OK,
                     false,
@@ -161,7 +161,7 @@ public class FriendService {
             );
         } else if (status == FriendStatus.DECLINED) {
             friendRepository.delete(existingRequest.get());
-            log.info("Friend request from user {} to user {} rejected", userId, friendId);
+            log.info("Friend request from user {} to user {} rejected", friendId, userId);
             return ResponseHandler.generateResponse(
                     HttpStatus.OK,
                     false,
@@ -196,24 +196,38 @@ public class FriendService {
             );
         }
 
-        Optional<Friend> existingRequest = friendRepository.findByUserIdAndFriendId(userId, friendId);
-        if (existingRequest.isEmpty()) {
+        Optional<Friend> firstExistingRequest = friendRepository.findByUserIdAndFriendId(userId, friendId);
+        Optional<Friend> secondExistingRequest = friendRepository.findByUserIdAndFriendId(friendId, userId);
+
+        if (firstExistingRequest.isPresent()) {
+            friendRepository.delete(firstExistingRequest.get());
+            log.info("Deleting friend {} from user {}", friendId, userId);
             return ResponseHandler.generateResponse(
-                    HttpStatus.BAD_REQUEST,
-                    true,
-                    "Friend request doesn't exist",
+                    HttpStatus.OK,
+                    false,
+                    "Friend deleted",
                     null
             );
+        } else {
+            if (secondExistingRequest.isPresent()) {
+                friendRepository.delete(secondExistingRequest.get());
+                log.info("Deleting friend {} from user {}", userId, friendId);
+                return ResponseHandler.generateResponse(
+                        HttpStatus.OK,
+                        false,
+                        "Friend deleted",
+                        null
+                );
+            }
         }
 
-        friendRepository.delete(existingRequest.get());
-        log.info("Deleting friend {} from user {}", friendId, userId);
         return ResponseHandler.generateResponse(
-                HttpStatus.OK,
-                false,
-                "Friend deleted",
+                HttpStatus.BAD_REQUEST,
+                true,
+                "Friend request doesn't exist",
                 null
         );
+
     }
 
     public List<User> getRecommendedFriends(Long userId) {

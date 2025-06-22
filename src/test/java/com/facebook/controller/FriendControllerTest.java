@@ -1,23 +1,17 @@
 package com.facebook.controller;
 
-import com.facebook.annotation.CurrentUser;
-import com.facebook.dto.FriendRequest;
 import com.facebook.dto.UserAuthDto;
 import com.facebook.enums.FriendStatus;
 import com.facebook.enums.Provider;
 import com.facebook.middleware.CurrentUserArgumentResolver;
 import com.facebook.model.User;
 import com.facebook.service.FriendService;
-import com.facebook.util.ResponseHandler;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -31,7 +25,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -44,9 +37,6 @@ public class FriendControllerTest {
     private FriendService friendService;
 
     @Mock
-    private ResponseHandler responseHandler;
-
-    @Mock
     private SecurityContext securityContext;
 
     @Mock
@@ -56,9 +46,7 @@ public class FriendControllerTest {
     private FriendController friendController;
 
     private MockMvc mockMvc;
-    private ObjectMapper objectMapper;
 
-    private UserAuthDto currentUser;
     private User testFriend;
     private Long userId = 1L;
     private Long friendId = 2L;
@@ -81,8 +69,6 @@ public class FriendControllerTest {
 
     @BeforeEach
     void setUp() {
-        objectMapper = new ObjectMapper();
-
         testFriend = new User();
         testFriend.setId(friendId);
         testFriend.setFirstName("Test Friend");

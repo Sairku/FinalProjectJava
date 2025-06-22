@@ -1,6 +1,5 @@
 package com.facebook.openapi;
 
-import com.facebook.dto.GroupResponse;
 import com.facebook.model.Friend;
 import io.swagger.v3.oas.annotations.media.Schema;
 
