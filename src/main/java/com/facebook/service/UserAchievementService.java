@@ -1,13 +1,11 @@
 package com.facebook.service;
 
 import com.facebook.dto.AchievementResponseDto;
-import com.facebook.exception.NotFoundException;
 import com.facebook.model.Achievement;
 import com.facebook.model.User;
 import com.facebook.model.UserAchievement;
 import com.facebook.repository.AchievementRepository;
 import com.facebook.repository.UserAchievementRepository;
-import com.facebook.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
