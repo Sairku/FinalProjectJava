@@ -33,7 +33,6 @@ public class FriendServiceTest {
     @InjectMocks
     private FriendService friendService;
 
-    private FriendStatus status;
     private User user = new User();
     private User friend = new User();
     private User notYetFriend = new User();
@@ -218,7 +217,7 @@ public class FriendServiceTest {
     void testResponseToFriendRequest_whenAccepted_OK() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(userRepository.findById(2L)).thenReturn(Optional.of(friend));
-        when(friendRepository.findByUserIdAndFriendId(1L, 2L)).thenReturn(Optional.of(friendObject));
+        when(friendRepository.findByUserIdAndFriendId(2L, 1L)).thenReturn(Optional.of(friendObject));
 
         ResponseEntity<Object> response = friendService.responseToFriendRequest(1L, 2L, FriendStatus.ACCEPTED);
 
@@ -230,7 +229,7 @@ public class FriendServiceTest {
     void testResponseToFriendRequest_whenDeclined_OK() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(userRepository.findById(2L)).thenReturn(Optional.of(friend));
-        when(friendRepository.findByUserIdAndFriendId(1L, 2L)).thenReturn(Optional.of(friendObject));
+        when(friendRepository.findByUserIdAndFriendId(2L, 1L)).thenReturn(Optional.of(friendObject));
 
         ResponseEntity<Object> response = friendService.responseToFriendRequest(1L, 2L, FriendStatus.DECLINED);
 
@@ -241,7 +240,7 @@ public class FriendServiceTest {
     void testResponseToFriendRequest_BadRequest(){
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(userRepository.findById(2L)).thenReturn(Optional.of(friend));
-        when(friendRepository.findByUserIdAndFriendId(1L, 2L)).thenReturn(Optional.of(friendObject));
+        when(friendRepository.findByUserIdAndFriendId(2L, 1L)).thenReturn(Optional.of(friendObject));
 
         ResponseEntity<Object> response = friendService.responseToFriendRequest(1L, 2L, FriendStatus.PENDING);
 
@@ -249,10 +248,10 @@ public class FriendServiceTest {
     }
 
     @Test
-    void testResponseToFriendRequest_FriendNotFound(){
+    void testResponseToFriendRequest_FriendRequestNotFound(){
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(userRepository.findById(2L)).thenReturn(Optional.of(friend));
-        when(friendRepository.findByUserIdAndFriendId(1L, 2L)).thenReturn(Optional.empty());
+        when(friendRepository.findByUserIdAndFriendId(2L, 1L)).thenReturn(Optional.empty());
 
         ResponseEntity<Object> response = friendService.responseToFriendRequest(1L, 2L, FriendStatus.ACCEPTED);
 
