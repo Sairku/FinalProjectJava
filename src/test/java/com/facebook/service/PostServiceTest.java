@@ -2,10 +2,7 @@ package com.facebook.service;
 
 import com.facebook.dto.*;
 import com.facebook.exception.NotFoundException;
-import com.facebook.model.Comment;
-import com.facebook.model.Like;
-import com.facebook.model.Post;
-import com.facebook.model.User;
+import com.facebook.model.*;
 import com.facebook.repository.CommentRepository;
 import com.facebook.repository.LikeRepository;
 import com.facebook.repository.PostRepository;
@@ -41,6 +38,9 @@ class PostServiceTest {
 
     @Mock
     private CommentRepository commentRepository;
+
+    @Mock
+    private UserAchievementService userAchievementService;
 
     @InjectMocks
     private PostService postService;
@@ -320,5 +320,53 @@ class PostServiceTest {
         when(commentRepository.findById(10L)).thenReturn(Optional.of(comment));
 
         assertThrows(IllegalArgumentException.class, () -> postService.deleteComment(1L, 999L, 10L));
+    }
+
+    @Test
+    void createPost_shouldGiveBuzzStartedAchievement_whenFirstPost() {
+        PostCreateRequestDto request = new PostCreateRequestDto();
+        request.setDescription("First post");
+        request.setImages(List.of("img1.jpg"));
+
+        Post savedPost = new Post();
+        savedPost.setUser(mockUser);
+        savedPost.setImages(new ArrayList<>(List.of(new PostImage())));
+        savedPost.setCreatedDate(LocalDateTime.now());
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(mockUser));
+        when(postRepository.save(any())).thenReturn(savedPost);
+        when(postRepository.findAllByUserId(1L)).thenReturn(Optional.of(List.of(savedPost)));
+        when(userAchievementService.userHaveAchievement(mockUser, "Buzz Started")).thenReturn(false);
+
+        postService.createPost(1L, request);
+
+        verify(userAchievementService).awardAchievement(mockUser, "Buzz Started");
+    }
+
+    @Test
+    void createPost_shouldGiveAestheticDropAchievement_whenFivePostsWithPhotos() {
+        PostCreateRequestDto request = new PostCreateRequestDto();
+        request.setDescription("Post 5");
+        request.setImages(List.of("img.jpg"));
+
+        List<Post> existingPosts = new ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            Post p = new Post();
+            p.setImages(new ArrayList<>(List.of(new PostImage())));
+            existingPosts.add(p);
+        }
+
+        Post newPost = new Post();
+        newPost.setImages(new ArrayList<>(List.of(new PostImage())));
+        existingPosts.add(newPost);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(mockUser));
+        when(postRepository.save(any())).thenReturn(newPost);
+        when(postRepository.findAllByUserId(1L)).thenReturn(Optional.of(existingPosts));
+        when(userAchievementService.userHaveAchievement(mockUser, "Aesthetic Drop")).thenReturn(false);
+
+        postService.createPost(1L, request);
+
+        verify(userAchievementService).awardAchievement(mockUser, "Aesthetic Drop");
     }
 }

@@ -4,6 +4,7 @@ import com.facebook.dto.*;
 import com.facebook.enums.Provider;
 import com.facebook.middleware.CurrentUserArgumentResolver;
 import com.facebook.service.PostService;
+import com.facebook.service.UserAchievementService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -15,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.modelmapper.ModelMapper;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -35,6 +37,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class PostControllerTest {
     @Mock
     private PostService postService;
+
+    @Mock
+    private ModelMapper modelMapper;
+
+    @Mock
+    private UserAchievementService userAchievementService;
 
     @Mock
     private SecurityContext securityContext;

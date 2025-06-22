@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 public class UserService {
     private final UserRepository userRepository;
     private final FriendRepository friendRepository;
+    private final UserAchievementService userAchievementService;
     private final ModelMapper modelMapper;
 
     public UserDetailsDto getCurrentUserDetails(long userId) {
@@ -115,8 +116,28 @@ public class UserService {
             user.setCurrentCity(updatedData.getCurrentCity());
         }
 
+
         User savedUser = userRepository.save(user);
+        String achievementName = "Pink Profile";
+        if (allFieldsAreFilled(user) && !userAchievementService.userHaveAchievement(user, achievementName)) {
+            userAchievementService.awardAchievement(user, achievementName);
+        }
 
         return modelMapper.map(savedUser, UserDetailsDto.class);
+    }
+
+    private boolean allFieldsAreFilled(User user) {
+        return user.getFirstName() != null &&
+                user.getLastName() != null &&
+                user.getPhone() != null &&
+                user.getBirthdate() != null &&
+                user.getAvatarUrl() != null &&
+                user.getHeaderPhotoUrl() != null &&
+                user.getHomeCity() != null &&
+                user.getCurrentCity() != null;
+    }
+
+    public User findUserById(long userId) {
+        return userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Not found user with ID: " + userId));
     }
 }
