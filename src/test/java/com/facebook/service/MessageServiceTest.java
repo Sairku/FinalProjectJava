@@ -1,6 +1,9 @@
 package com.facebook.service;
 
-import com.facebook.dto.*;
+import com.facebook.dto.MessageCreateRequest;
+import com.facebook.dto.MessageResponse;
+import com.facebook.dto.MessageUpdateRequest;
+import com.facebook.dto.UserShortDto;
 import com.facebook.exception.NotFoundException;
 import com.facebook.model.Message;
 import com.facebook.model.User;
@@ -58,13 +61,13 @@ public class MessageServiceTest {
 
     @Test
     void create_shouldReturnMessageResponse() {
-        MessageCreateRequest request = new MessageCreateRequest(1L, 2L, "Hello");
+        MessageCreateRequest request = new MessageCreateRequest(2L, "Hello!");
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(sender));
         when(userRepository.findById(2L)).thenReturn(Optional.of(receiver));
         when(messageRepository.save(any(Message.class))).thenReturn(message);
 
-        MessageResponse response = messageService.create(request);
+        MessageResponse response = messageService.create(1L, request);
 
         assertNotNull(response);
         assertEquals("Hello", response.getText());
@@ -76,11 +79,21 @@ public class MessageServiceTest {
 
     @Test
     void create_shouldThrowNotFoundException_ifSenderMissing() {
-        MessageCreateRequest request = new MessageCreateRequest(1L, 2L, "Hello");
+        MessageCreateRequest request = new MessageCreateRequest(2L, "Hello!");
 
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> messageService.create(request));
+        assertThrows(NotFoundException.class, () -> messageService.create(1L, request));
+    }
+
+    @Test
+    void create_shouldThrowNotFoundException_ifReceiverMissing() {
+        MessageCreateRequest request = new MessageCreateRequest(2L, "Hello!");
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(sender));
+        when(userRepository.findById(2L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> messageService.create(1L, request));
     }
 
     @Test
@@ -108,6 +121,7 @@ public class MessageServiceTest {
 
     @Test
     void read_shouldReturnMessageResponse() {
+        message.setRead(true);
         when(messageRepository.findById(10L)).thenReturn(Optional.of(message));
         when(messageRepository.save(any(Message.class))).thenReturn(message);
 

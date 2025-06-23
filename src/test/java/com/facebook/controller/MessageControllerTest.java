@@ -49,9 +49,11 @@ public class MessageControllerTest {
 
     @Test
     void create_shouldReturn201() throws Exception {
-        MessageCreateRequest request = new MessageCreateRequest(1L, 2L, "Hello!");
+        MessageCreateRequest request = new MessageCreateRequest(2L, "Hello!");
 
-        Mockito.when(messageService.create(any(MessageCreateRequest.class))).thenReturn(sampleResponse);
+        Mockito.when(messageService.create(any(Long.class), any(MessageCreateRequest.class)))
+                .thenReturn(sampleResponse);
+
 
         mockMvc.perform(post("/api/messages/create")
                         .contentType(MediaType.APPLICATION_JSON)
