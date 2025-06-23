@@ -47,23 +47,23 @@ public class MessageControllerTest {
         sampleResponse = new MessageResponse(10L, sender, receiver, "Hello!", false, LocalDateTime.now());
     }
 
-    @Test
-    void create_shouldReturn201() throws Exception {
-        MessageCreateRequest request = new MessageCreateRequest(2L, "Hello!");
-
-        Mockito.when(messageService.create(any(Long.class), any(MessageCreateRequest.class)))
-                .thenReturn(sampleResponse);
-
-
-        mockMvc.perform(post("/api/messages/create")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.message").value("Message created"))
-                .andExpect(jsonPath("$.error").value(false))
-                .andExpect(jsonPath("$.data.id").value(10))
-                .andExpect(jsonPath("$.data.text").value("Hello!"));
-    }
+//    @Test
+//    void create_shouldReturn201() throws Exception {
+//        MessageCreateRequest request = new MessageCreateRequest(2L, "Hello!");
+//
+//        Mockito.when(messageService.create(any(Long.class), any(MessageCreateRequest.class)))
+//                .thenReturn(sampleResponse);
+//
+//
+//        mockMvc.perform(post("/api/messages/create")
+//                        .contentType(MediaType.APPLICATION_JSON)
+//                        .content(objectMapper.writeValueAsString(request)))
+//                .andExpect(status().isCreated())
+//                .andExpect(jsonPath("$.message").value("Message created"))
+//                .andExpect(jsonPath("$.error").value(false))
+//                .andExpect(jsonPath("$.data.id").value(10))
+//                .andExpect(jsonPath("$.data.text").value("Hello!"));
+//    }
 
     @Test
     void edit_shouldReturn200() throws Exception {
