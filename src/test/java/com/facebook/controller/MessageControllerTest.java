@@ -41,8 +41,8 @@ public class MessageControllerTest {
         objectMapper = new ObjectMapper();
         mockMvc = MockMvcBuilders.standaloneSetup(messageController).build();
 
-        UserMessageDTO sender = new UserMessageDTO(1L, "John", "Doe");
-        UserMessageDTO receiver = new UserMessageDTO(2L, "Jane", "Smith");
+        UserShortDto sender = new UserShortDto(1L, "John", "Doe");
+        UserShortDto receiver = new UserShortDto(2L, "Jane", "Smith");
 
         sampleResponse = new MessageResponse(10L, sender, receiver, "Hello!", false, LocalDateTime.now());
     }
