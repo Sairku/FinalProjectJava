@@ -1,8 +1,10 @@
 package com.facebook.controller;
 
+import com.facebook.annotation.CurrentUser;
 import com.facebook.dto.MessageCreateRequest;
 import com.facebook.dto.MessageResponse;
 import com.facebook.dto.MessageUpdateRequest;
+import com.facebook.dto.UserAuthDto;
 import com.facebook.service.MessageService;
 import com.facebook.util.ResponseHandler;
 import io.swagger.v3.oas.annotations.Operation;
@@ -44,8 +46,11 @@ public class MessageController {
             }
     )
     @PostMapping("/create")
-    public ResponseEntity<?> create(@RequestBody @Valid MessageCreateRequest request) {
-        MessageResponse response = messageService.create(request);
+    public ResponseEntity<?> create(
+            @CurrentUser UserAuthDto currentUser, // отримуємо з контексту безпечно
+            @RequestBody @Valid MessageCreateRequest request) {
+
+        MessageResponse response = messageService.create(currentUser.getId(), request);
         return ResponseHandler.generateResponse(HttpStatus.CREATED, false, "Message created", response);
     }
 

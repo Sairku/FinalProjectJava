@@ -1,6 +1,9 @@
 package com.facebook.service;
 
-import com.facebook.dto.*;
+import com.facebook.dto.MessageCreateRequest;
+import com.facebook.dto.MessageResponse;
+import com.facebook.dto.MessageUpdateRequest;
+import com.facebook.dto.UserMessageDTO;
 import com.facebook.exception.NotFoundException;
 import com.facebook.model.Message;
 import com.facebook.model.User;
@@ -18,8 +21,8 @@ public class MessageService {
     private final MessageRepository messageRepository;
     private final UserRepository userRepository;
 
-    public MessageResponse create(MessageCreateRequest request) {
-        User sender = userRepository.findById(request.getSenderId())
+    public MessageResponse create(Long senderId, MessageCreateRequest request) {
+        User sender = userRepository.findById(senderId)
                 .orElseThrow(() -> new NotFoundException("Sender not found"));
 
         User receiver = userRepository.findById(request.getReceiverId())
