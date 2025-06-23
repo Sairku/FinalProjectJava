@@ -13,9 +13,9 @@ public class MessageResponse {
 
     private Long id;
 
-    private UserMessageDTO sender;
+    private UserShortDto sender;
 
-    private UserMessageDTO receiver;
+    private UserShortDto receiver;
 
     private String text;
 

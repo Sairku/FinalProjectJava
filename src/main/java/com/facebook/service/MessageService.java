@@ -3,7 +3,7 @@ package com.facebook.service;
 import com.facebook.dto.MessageCreateRequest;
 import com.facebook.dto.MessageResponse;
 import com.facebook.dto.MessageUpdateRequest;
-import com.facebook.dto.UserMessageDTO;
+import com.facebook.dto.UserShortDto;
 import com.facebook.exception.NotFoundException;
 import com.facebook.model.Message;
 import com.facebook.model.User;
@@ -70,13 +70,13 @@ public class MessageService {
     }
 
     private MessageResponse mapToResponse(Message message) {
-        UserMessageDTO senderDto = new UserMessageDTO(
+        UserShortDto senderDto = new UserShortDto(
                 message.getSender().getId(),
                 message.getSender().getFirstName(),
                 message.getSender().getLastName()
         );
 
-        UserMessageDTO receiverDto = new UserMessageDTO(
+        UserShortDto receiverDto = new UserShortDto(
                 message.getReceiver().getId(),
                 message.getReceiver().getFirstName(),
                 message.getReceiver().getLastName()
