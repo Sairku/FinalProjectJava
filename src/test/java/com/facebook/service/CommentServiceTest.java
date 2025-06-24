@@ -88,6 +88,40 @@ public class CommentServiceTest {
     }
 
     @Test
+    void testUpdateCommentSuccess() {
+        Comment comment = new Comment();
+        comment.setId(10L);
+        comment.setUser(mockUser);
+        comment.setText("Old text");
+
+        when(commentRepository.findById(10L)).thenReturn(Optional.of(comment));
+
+        commentService.updateComment(10L, mockUser.getId(), "New text");
+
+        assertEquals("New text", comment.getText());
+        verify(commentRepository).save(comment);
+    }
+
+    @Test
+    void testUpdateComment_throwNotFoundComment() {
+        when(commentRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> commentService.updateComment(999L, 1L, "New text"));
+    }
+
+    @Test
+    void testUpdateComment_throwInvalidUser() {
+        Comment comment = new Comment();
+        comment.setId(10L);
+        comment.setUser(mockUser);
+        comment.setText("Old text");
+
+        when(commentRepository.findById(10L)).thenReturn(Optional.of(comment));
+
+        assertThrows(IllegalArgumentException.class, () -> commentService.updateComment(10L, 999L, "New text"));
+    }
+
+    @Test
     void testGetPostComments() {
         Post post = new Post();
         post.setId(1L);

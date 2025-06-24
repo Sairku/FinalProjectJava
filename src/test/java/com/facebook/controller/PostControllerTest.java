@@ -26,6 +26,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.test.web.servlet.setup.StandaloneMockMvcBuilder;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -143,6 +144,7 @@ public class PostControllerTest {
                         .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andExpect(status().isBadRequest());
     }
+
     @Test
     void deletePost_shouldReturn200_whenDeleted() throws Exception {
         Long postId = 1L;
@@ -170,6 +172,20 @@ public class PostControllerTest {
                 .andExpect(jsonPath("$.message").value("Post liked successfully"))
                 .andExpect(jsonPath("$.error").value(false))
                 .andExpect(jsonPath("$.data").value(5));
+    }
+
+    @Test
+    void repostPost_Success() throws Exception {
+        mockMvc = buildMockMvc(true);
+        Long postId = 1L;
+
+        when(postService.repost(postId, userId)).thenReturn(1);
+
+        mockMvc.perform(post("/api/posts/{id}/repost", postId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Post reposted successfully"))
+                .andExpect(jsonPath("$.error").value(false))
+                .andExpect(jsonPath("$.data").value(1));
     }
 
     @Test
@@ -211,5 +227,27 @@ public class PostControllerTest {
                 .andExpect(jsonPath("$.message").value("Comments retrieved successfully"))
                 .andExpect(jsonPath("$.error").value(false))
                 .andExpect(jsonPath("$.data[0].text").value("Nice!"));
+    }
+
+    @Test
+    void testGetAllPosts() throws Exception {
+        mockMvc = buildMockMvc(true);
+
+        List<PostResponseDto> posts = new ArrayList<>();
+        PostResponseDto post = new PostResponseDto();
+
+        post.setId(1L);
+        post.setText("Test post");
+        post.setCreatedDate(LocalDateTime.now());
+        post.setUser(new UserShortDto(userId, "John", "Doe"));
+        posts.add(post);
+
+        when(postService.getUserAndFriendsPosts(userId)).thenReturn(posts);
+
+        mockMvc.perform(get("/api/posts"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Posts retrieved successfully"))
+                .andExpect(jsonPath("$.error").value(false))
+                .andExpect(jsonPath("$.data[0].text").value("Test post"));
     }
 }

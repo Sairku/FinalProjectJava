@@ -7,6 +7,7 @@ import com.facebook.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -61,6 +62,7 @@ public class PostService {
                 .toList();
 
         return new PostResponseDto(
+                savedPost.getId(),
                 userDTO,
                 savedPost.getText(),
                 images,
@@ -95,6 +97,7 @@ public class PostService {
                 .toList();
 
         return new PostResponseDto(
+                updatedPost.getId(),
                 userDTO,
                 updatedPost.getText(),
                 images,
@@ -179,7 +182,7 @@ public class PostService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found with ID: " + userId));
 
-        List<Post> posts = postRepository.findAllByUserId(userId).orElse(List.of());
+        List<Post> posts = new ArrayList<>(postRepository.findAllByUserId(userId).orElse(List.of()));
         List<Repost> reposts = repostRepository.findAllByUserId(userId).orElse(List.of());
 
         if (!reposts.isEmpty()) {
@@ -194,6 +197,7 @@ public class PostService {
                             .toList();
 
                     return new PostResponseDto(
+                            post.getId(),
                             new UserShortDto(user.getId(), user.getFirstName(), user.getLastName()),
                             post.getText(),
                             images,
@@ -210,12 +214,12 @@ public class PostService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found with ID: " + userId));
 
-        List<Post> posts = postRepository.findAllByUserId(userId).orElse(List.of());
+        List<Post> posts = new ArrayList<>(postRepository.findAllByUserId(userId).orElse(List.of()));
 
         List<User> friends = friendService.getAllFriendUsers(userId);
 
         for (User friend : friends) {
-            List<Post> friendPosts = postRepository.findAllByUserId(friend.getId()).orElse(List.of());
+            List<Post> friendPosts = new ArrayList<>(postRepository.findAllByUserId(friend.getId()).orElse(List.of()));
             posts.addAll(friendPosts);
         }
 
@@ -227,6 +231,7 @@ public class PostService {
                             .toList();
 
                     return new PostResponseDto(
+                            post.getId(),
                             new UserShortDto(user.getId(), user.getFirstName(), user.getLastName()),
                             post.getText(),
                             images,

@@ -3,10 +3,7 @@ package com.facebook.service;
 import com.facebook.dto.*;
 import com.facebook.exception.NotFoundException;
 import com.facebook.model.*;
-import com.facebook.repository.CommentRepository;
-import com.facebook.repository.LikeRepository;
-import com.facebook.repository.PostRepository;
-import com.facebook.repository.UserRepository;
+import com.facebook.repository.*;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,20 +34,25 @@ class PostServiceTest {
     private LikeRepository likeRepository;
 
     @Mock
-    private CommentRepository commentRepository;
+    private RepostRepository repostRepository;
 
     @Mock
     private UserAchievementService userAchievementService;
+
+    @Mock
+    private FriendService friendService;
 
     @InjectMocks
     private PostService postService;
 
     private User mockUser;
 
+    private long mockUserId = 1L;
+
     @BeforeEach
     void init() {
         mockUser = new User();
-        mockUser.setId(1L);
+        mockUser.setId(mockUserId);
         mockUser.setFirstName("John");
         mockUser.setLastName("Doe");
     }
@@ -61,14 +63,14 @@ class PostServiceTest {
         request.setText("Test post");
         request.setImages(List.of("img1.jpg", "img2.jpg"));
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(mockUser));
+        when(userRepository.findById(mockUserId)).thenReturn(Optional.of(mockUser));
         when(postRepository.save(any(Post.class))).thenAnswer(invocation -> {
             Post savedPost = invocation.getArgument(0);
             savedPost.setCreatedDate(LocalDateTime.now());
             return savedPost;
         });
 
-        PostResponseDto response = postService.createPost(1L, request);
+        PostResponseDto response = postService.createPost(mockUserId, request);
 
         assertNotNull(response);
         assertEquals("Test post", response.getText());
@@ -176,8 +178,8 @@ class PostServiceTest {
         post.setLikes(new ArrayList<>(List.of(like)));
 
         when(postRepository.findById(1L)).thenReturn(Optional.of(post));
-        when(userRepository.findById(1L)).thenReturn(Optional.of(mockUser));
-        when(likeRepository.findByUserIdAndPostId(1L, 1L)).thenReturn(Optional.of(like));
+        when(userRepository.findById(mockUserId)).thenReturn(Optional.of(mockUser));
+        when(likeRepository.findByUserIdAndPostId(mockUserId, 1L)).thenReturn(Optional.of(like));
         when(postRepository.save(any(Post.class))).thenReturn(post);
 
         int likeCount = postService.likePost(1L, 1L);
@@ -202,6 +204,75 @@ class PostServiceTest {
         when(userRepository.findById(999L)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> postService.likePost(1L, 999L));
+    }
+
+    @Test
+    void testRepostSuccess() {
+        Post originalPost = new Post();
+        originalPost.setId(1L);
+        originalPost.setUser(mockUser);
+
+        User repostingUser = new User();
+        repostingUser.setId(2L);
+
+        when(postRepository.findById(1L)).thenReturn(Optional.of(originalPost));
+        when(userRepository.findById(2L)).thenReturn(Optional.of(repostingUser));
+        when(repostRepository.findByUserIdAndPostId(2L, 1L)).thenReturn(Optional.empty());
+
+        int repostCount = postService.repost(1L, 2L);
+
+        assertEquals(1, repostCount);
+        verify(postRepository).save(any(Post.class));
+    }
+
+    @Test
+    void testRepost_AlreadyExists() {
+        Post originalPost = new Post();
+        originalPost.setId(1L);
+        originalPost.setUser(mockUser);
+
+        User repostingUser = new User();
+        repostingUser.setId(2L);
+
+        Repost repost = new Repost();
+        repost.setPost(originalPost);
+        repost.setUser(repostingUser);
+
+        when(postRepository.findById(1L)).thenReturn(Optional.of(originalPost));
+        when(userRepository.findById(2L)).thenReturn(Optional.of(repostingUser));
+        when(repostRepository.findByUserIdAndPostId(2L, 1L)).thenReturn(Optional.of(repost));
+
+        assertThrows(IllegalArgumentException.class, () -> postService.repost(1L, 2L));
+    }
+
+    @Test
+    void testRepost_SameUser() {
+        Post originalPost = new Post();
+        originalPost.setId(1L);
+        originalPost.setUser(mockUser);
+
+        when(postRepository.findById(1L)).thenReturn(Optional.of(originalPost));
+        when(userRepository.findById(mockUserId)).thenReturn(Optional.of(mockUser));
+
+        assertThrows(IllegalArgumentException.class, () -> postService.repost(1L, mockUserId));
+    }
+
+    @Test
+    void testRepost_NotFoundPost() {
+        when(postRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> postService.repost(999L, 1L));
+    }
+
+    @Test
+    void testRepost_NotFoundUser() {
+        Post originalPost = new Post();
+        originalPost.setId(1L);
+
+        when(postRepository.findById(1L)).thenReturn(Optional.of(originalPost));
+        when(userRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> postService.repost(1L, 999L));
     }
 
     @Test
@@ -250,5 +321,81 @@ class PostServiceTest {
         postService.createPost(1L, request);
 
         verify(userAchievementService).awardAchievement(mockUser, "Aesthetic Drop");
+    }
+
+    @Test
+    void testGetUserPosts() {
+        long userId = 1L;
+        List<Post> posts = new ArrayList<>();
+
+        Post post1 = new Post();
+        post1.setId(1L);
+        post1.setText("Post 1");
+        post1.setUser(mockUser);
+        post1.setCreatedDate(LocalDateTime.now());
+        posts.add(post1);
+
+        Post post2 = new Post();
+        post2.setId(2L);
+        post2.setText("Post 2");
+        post2.setUser(mockUser);
+        post2.setCreatedDate(LocalDateTime.now());
+        posts.add(post2);
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(mockUser));
+        when(postRepository.findAllByUserId(userId)).thenReturn(Optional.of(posts));
+
+        List<PostResponseDto> response = postService.getUserPosts(userId);
+
+        assertEquals(2, response.size());
+        assertEquals("Post 1", response.get(0).getText());
+        assertEquals("Post 2", response.get(1).getText());
+    }
+
+    @Test
+    void testGetUserPosts_NotFoundUser() {
+        long userId = 999L;
+
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> postService.getUserPosts(userId));
+    }
+
+    @Test
+    void testGetUserAndFriendsPosts() {
+        Post post1 = new Post();
+        post1.setId(1L);
+        post1.setText("User Post");
+        post1.setUser(mockUser);
+        post1.setCreatedDate(LocalDateTime.now().minusHours(3));
+
+        User friend = new User();
+        friend.setId(2L);
+
+        Post post2 = new Post();
+        post2.setId(2L);
+        post2.setText("Friend Post");
+        post2.setUser(friend);
+        post2.setCreatedDate(LocalDateTime.now());
+
+        when(userRepository.findById(mockUserId)).thenReturn(Optional.of(mockUser));
+        when(postRepository.findAllByUserId(mockUserId)).thenReturn(Optional.of(List.of(post1)));
+        when(friendService.getAllFriendUsers(mockUserId)).thenReturn(List.of(friend));
+        when(postRepository.findAllByUserId(friend.getId())).thenReturn(Optional.of(List.of(post2)));
+
+        List<PostResponseDto> response = postService.getUserAndFriendsPosts(mockUserId);
+
+        assertEquals(2, response.size());
+        assertEquals("Friend Post", response.get(0).getText());
+        assertEquals("User Post", response.get(1).getText());
+    }
+
+    @Test
+    void testGetUserAndFriendsPosts_NotFoundUser() {
+        long userId = 999L;
+
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> postService.getUserAndFriendsPosts(userId));
     }
 }

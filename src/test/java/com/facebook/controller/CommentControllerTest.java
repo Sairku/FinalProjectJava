@@ -1,10 +1,12 @@
 package com.facebook.controller;
 
+import com.facebook.dto.CommentRequestDto;
 import com.facebook.dto.UserAuthDto;
 import com.facebook.enums.Provider;
 import com.facebook.middleware.CurrentUserArgumentResolver;
 import com.facebook.service.CommentService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -22,6 +24,7 @@ import java.util.ArrayList;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -43,25 +46,45 @@ public class CommentControllerTest {
     private ObjectMapper objectMapper;
     private Long userId = 1L;
 
-    private MockMvc buildMockMvc(boolean withCurrentUser) {
+    @BeforeEach
+    void setUp() {
+        objectMapper = new ObjectMapper();
+
         StandaloneMockMvcBuilder builder = MockMvcBuilders.standaloneSetup(commentController);
 
-        if (withCurrentUser) {
-            builder.setCustomArgumentResolvers(new CurrentUserArgumentResolver());
+        builder.setCustomArgumentResolvers(new CurrentUserArgumentResolver());
 
-            UserAuthDto currentUserData = new UserAuthDto(userId, "test@example.com", "test", Provider.LOCAL, new ArrayList<>());
+        UserAuthDto currentUserData = new UserAuthDto(userId, "test@example.com", "test", Provider.LOCAL, new ArrayList<>());
 
-            when(securityContext.getAuthentication()).thenReturn(authentication);
-            when(authentication.getPrincipal()).thenReturn(currentUserData);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.getPrincipal()).thenReturn(currentUserData);
 
-            SecurityContextHolder.setContext(securityContext);
-        }
-        return builder.build();
+        SecurityContextHolder.setContext(securityContext);
+
+        mockMvc = builder.build();
+    }
+
+    @Test
+    void updateCommentSuccess() throws Exception {
+        Long commentId = 10L;
+        String newText = "Updated comment content";
+
+        CommentRequestDto requestDto = new CommentRequestDto();
+        requestDto.setText(newText);
+
+        Mockito.doNothing().when(commentService).updateComment(commentId, userId, requestDto.getText());
+
+        mockMvc.perform(put("/api/comments/{commentId}", commentId)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Comment updated successfully"))
+                .andExpect(jsonPath("$.error").value(false))
+                .andExpect(jsonPath("$.data").doesNotExist());
     }
 
     @Test
     void deleteCommentSuccess() throws Exception {
-        mockMvc = buildMockMvc(true);
         Long commentId = 10L;
 
         Mockito.doNothing().when(commentService).deleteComment(commentId, userId);

@@ -12,6 +12,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PostResponseDto {
+    private Long id;
     private UserShortDto user;
     private String text;
     private List<String> images = new ArrayList<>();
