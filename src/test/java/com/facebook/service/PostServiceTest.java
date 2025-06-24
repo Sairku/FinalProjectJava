@@ -332,7 +332,7 @@ class PostServiceTest {
         post1.setId(1L);
         post1.setText("Post 1");
         post1.setUser(mockUser);
-        post1.setCreatedDate(LocalDateTime.now());
+        post1.setCreatedDate(LocalDateTime.now().minusHours(2));
         posts.add(post1);
 
         Post post2 = new Post();
@@ -348,8 +348,8 @@ class PostServiceTest {
         List<PostResponseDto> response = postService.getUserPosts(userId);
 
         assertEquals(2, response.size());
-        assertEquals("Post 1", response.get(0).getText());
-        assertEquals("Post 2", response.get(1).getText());
+        assertEquals("Post 2", response.get(0).getText());
+        assertEquals("Post 1", response.get(1).getText());
     }
 
     @Test
