@@ -74,9 +74,13 @@ public class MessageService {
         return mapToResponse(updated);
     }
 
-    public void delete(long id) {
+    public void delete(long id, Long userId) {
         Message message = messageRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Message not found"));
+
+        if (!message.getSender().getId().equals(userId)) {
+            throw new SecurityException("You can only delete your own messages");
+        }
 
         messageRepository.delete(message);
     }

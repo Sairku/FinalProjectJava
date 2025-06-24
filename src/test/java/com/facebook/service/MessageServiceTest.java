@@ -164,7 +164,7 @@ public class MessageServiceTest {
         when(messageRepository.findById(10L)).thenReturn(Optional.of(message));
         doNothing().when(messageRepository).delete(message);
 
-        messageService.delete(10L);
+        messageService.delete(10L, 1L);
 
         verify(messageRepository).delete(message);
     }
@@ -173,6 +173,6 @@ public class MessageServiceTest {
     void delete_shouldThrowNotFoundException_ifMessageMissing() {
         when(messageRepository.findById(999L)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> messageService.delete(999L));
+        assertThrows(NotFoundException.class, () -> messageService.delete(999L, 1L));
     }
 }

@@ -127,8 +127,9 @@ public class MessageController {
             }
     )
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<?> delete(@PathVariable Long id) {
-        messageService.delete(id);
+    public ResponseEntity<?> delete(@PathVariable Long id, @Parameter(hidden = true) @CurrentUser UserAuthDto currentUser) {
+        messageService.delete(id, currentUser.getId());
+
         return ResponseHandler.generateResponse(HttpStatus.OK, false, "Message deleted", null);
     }
 }
