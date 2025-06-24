@@ -13,8 +13,8 @@ import java.util.List;
 @AllArgsConstructor
 public class PostCreateRequestDto {
 
-    @NotBlank(message = "Description is required")
-    private String description;
+    @NotBlank(message = "Text is required")
+    private String text;
 
     private List<String> images = new ArrayList<>();
 }

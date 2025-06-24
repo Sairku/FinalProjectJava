@@ -91,6 +91,7 @@ public class GroupControllerTest {
         groupMemberRequest.setStatus(GroupJoinStatus.APPROVED.name());
 
         groupResponse = new GroupResponse();
+        groupResponse.setId(groupId);
         groupResponse.setName(createRequest.getName());
         groupResponse.setDescription(updateRequest.getDescription());
         groupResponse.setColor(updateRequest.getColor());

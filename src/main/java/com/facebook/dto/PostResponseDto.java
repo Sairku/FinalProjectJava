@@ -12,10 +12,12 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PostResponseDto {
+    private Long id;
     private UserShortDto user;
-    private String description;
+    private String text;
     private List<String> images = new ArrayList<>();
     private LocalDateTime createdDate;
     private int likesCount;
     private int commentsCount;
+    private int repostsCount;
 }
