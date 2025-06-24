@@ -40,16 +40,28 @@ public class MessageService {
         return mapToResponse(saved);
     }
 
-    public MessageResponse update(MessageUpdateRequest request) {
-        Message message = messageRepository.findById(request.getId())
+    public MessageResponse update(Long userId, Long messageId, MessageUpdateRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        // Отримуємо повідомлення за ID з URL
+        Message message = messageRepository.findById(messageId)
                 .orElseThrow(() -> new NotFoundException("Message not found"));
 
+        // Перевірка, що повідомлення належить користувачу
+        if (!message.getSender().getId().equals(user.getId())) {
+            throw new SecurityException("You can only edit your own messages");
+        }
+
+        // Оновлення тексту повідомлення
         message.setText(request.getText());
 
         Message updated = messageRepository.save(message);
 
         return mapToResponse(updated);
     }
+
+
 
     public MessageResponse read(long id) {
         Message message = messageRepository.findById(id)

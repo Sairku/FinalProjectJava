@@ -25,10 +25,10 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class MessageServiceTest {
 
-    @Mock
+    @Mock(lenient = true) // дозволяє не викликати помилку для непотрібних стубів
     private MessageRepository messageRepository;
 
-    @Mock
+    @Mock(lenient = true) // дозволяє не викликати помилку для непотрібних стубів
     private UserRepository userRepository;
 
     @InjectMocks
@@ -63,6 +63,7 @@ public class MessageServiceTest {
     void create_shouldReturnMessageResponse() {
         MessageCreateRequest request = new MessageCreateRequest(2L, "Hello!");
 
+        // Моки для користувачів
         when(userRepository.findById(1L)).thenReturn(Optional.of(sender));
         when(userRepository.findById(2L)).thenReturn(Optional.of(receiver));
         when(messageRepository.save(any(Message.class))).thenReturn(message);
@@ -81,6 +82,7 @@ public class MessageServiceTest {
     void create_shouldThrowNotFoundException_ifSenderMissing() {
         MessageCreateRequest request = new MessageCreateRequest(2L, "Hello!");
 
+        // Якщо користувач не знайдений
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> messageService.create(1L, request));
@@ -90,6 +92,7 @@ public class MessageServiceTest {
     void create_shouldThrowNotFoundException_ifReceiverMissing() {
         MessageCreateRequest request = new MessageCreateRequest(2L, "Hello!");
 
+        // Якщо отримувач не знайдений
         when(userRepository.findById(1L)).thenReturn(Optional.of(sender));
         when(userRepository.findById(2L)).thenReturn(Optional.empty());
 
@@ -98,25 +101,42 @@ public class MessageServiceTest {
 
     @Test
     void update_shouldReturnMessageResponse() {
-        MessageUpdateRequest request = new MessageUpdateRequest(10L, "Updated text");
+        // Створюємо запит для оновлення повідомлення
+        MessageUpdateRequest request = new MessageUpdateRequest("Updated text");
 
-        when(messageRepository.findById(10L)).thenReturn(Optional.of(message));
-        when(messageRepository.save(any(Message.class))).thenReturn(message);
+        // Моки для повідомлення та користувачів
+        when(userRepository.findById(1L)).thenReturn(Optional.of(sender)); // Перевіряємо, чи існує користувач
+        when(messageRepository.findById(10L)).thenReturn(Optional.of(message)); // Перевіряємо, чи існує повідомлення
+        when(messageRepository.save(any(Message.class))).thenReturn(message); // Мок для збереження повідомлення
 
-        MessageResponse response = messageService.update(request);
+        // Викликаємо метод сервісу
+        MessageResponse response = messageService.update(1L, 10L, request);
 
+        // Перевірка результатів
         assertNotNull(response);
-        assertEquals("Updated text", response.getText());
-        verify(messageRepository).save(any(Message.class));
+        assertEquals("Updated text", response.getText()); // Перевірка, чи текст було оновлено
+        verify(messageRepository).save(any(Message.class)); // Перевірка виклику save
     }
+
 
     @Test
     void update_shouldThrowNotFoundException_ifMessageMissing() {
-        MessageUpdateRequest request = new MessageUpdateRequest(999L, "Text");
+        MessageUpdateRequest request = new MessageUpdateRequest("Text");
 
+        // Мок для відсутності повідомлення
         when(messageRepository.findById(999L)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> messageService.update(request));
+        assertThrows(NotFoundException.class, () -> messageService.update(1L, 999L, request));
+    }
+
+    @Test
+    void update_shouldThrowNotFoundException_ifUserMissing() {
+        MessageUpdateRequest request = new MessageUpdateRequest("Text");
+
+        // Мок для відсутності користувача
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> messageService.update(1L, 10L, request));
     }
 
     @Test

@@ -47,7 +47,7 @@ public class MessageController {
     )
     @PostMapping("/create")
     public ResponseEntity<?> create(
-            @CurrentUser UserAuthDto currentUser, // отримуємо з контексту безпечно
+            @Parameter(hidden = true) @CurrentUser UserAuthDto currentUser,
             @RequestBody @Valid MessageCreateRequest request) {
 
         MessageResponse response = messageService.create(currentUser.getId(), request);
@@ -77,13 +77,16 @@ public class MessageController {
             }
     )
     @PutMapping("/edit/{id}")
-    public ResponseEntity<?> edit(@PathVariable Long id, @RequestBody @Valid MessageUpdateRequest request) {
-        if (!id.equals(request.getId())) {
-            return ResponseHandler.generateResponse(HttpStatus.BAD_REQUEST, true, "ID mismatch", null);
-        }
-        MessageResponse response = messageService.update(request);
+    public ResponseEntity<?> edit(@PathVariable Long id,
+                                  @RequestBody @Valid MessageUpdateRequest request,
+                                  @Parameter(hidden = true) @CurrentUser UserAuthDto currentUser) {
+
+        // Передаємо userId та id з URL до сервісу
+        MessageResponse response = messageService.update(currentUser.getId(), id, request);
+
         return ResponseHandler.generateResponse(HttpStatus.OK, false, "Message updated", response);
     }
+
 
     @Operation(
             summary = "Mark message as read",

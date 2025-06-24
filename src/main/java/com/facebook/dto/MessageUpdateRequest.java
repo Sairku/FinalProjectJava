@@ -11,9 +11,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class MessageUpdateRequest {
 
-    @NotNull(message = "Message ID is required")
-    private Long id;
-
     @NotBlank(message = "Text is required")
     private String text;
 }

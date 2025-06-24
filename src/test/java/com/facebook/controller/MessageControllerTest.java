@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -47,29 +48,37 @@ public class MessageControllerTest {
         sampleResponse = new MessageResponse(10L, sender, receiver, "Hello!", false, LocalDateTime.now());
     }
 
-//    @Test
-//    void create_shouldReturn201() throws Exception {
-//        MessageCreateRequest request = new MessageCreateRequest(2L, "Hello!");
-//
-//        Mockito.when(messageService.create(any(Long.class), any(MessageCreateRequest.class)))
-//                .thenReturn(sampleResponse);
-//
-//
-//        mockMvc.perform(post("/api/messages/create")
-//                        .contentType(MediaType.APPLICATION_JSON)
-//                        .content(objectMapper.writeValueAsString(request)))
-//                .andExpect(status().isCreated())
-//                .andExpect(jsonPath("$.message").value("Message created"))
-//                .andExpect(jsonPath("$.error").value(false))
-//                .andExpect(jsonPath("$.data.id").value(10))
-//                .andExpect(jsonPath("$.data.text").value("Hello!"));
-//    }
+    @Test
+    void create_shouldReturn201() throws Exception {
+        // Оновлений запит без ID в MessageCreateRequest, оскільки ID отримується з @CurrentUser
+        MessageCreateRequest request = new MessageCreateRequest(2L, "Hello!");
+
+        // Мокінг для UserAuthDto
+        // Створюємо порожню колекцію для авторизацій
+        UserAuthDto mockUserAuthDto = new UserAuthDto(1L, "john.doe", "password", null, Collections.emptyList());
+
+        Mockito.when(messageService.create(eq(mockUserAuthDto.getId()), any(MessageCreateRequest.class)))
+                .thenReturn(sampleResponse);
+
+        mockMvc.perform(post("/api/messages/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.message").value("Message created"))
+                .andExpect(jsonPath("$.error").value(false))
+                .andExpect(jsonPath("$.data.id").value(10))
+                .andExpect(jsonPath("$.data.text").value("Hello!"));
+    }
 
     @Test
     void edit_shouldReturn200() throws Exception {
-        MessageUpdateRequest request = new MessageUpdateRequest(10L, "Updated text");
+        MessageUpdateRequest request = new MessageUpdateRequest("Updated text");
 
-        Mockito.when(messageService.update(any(MessageUpdateRequest.class))).thenReturn(sampleResponse);
+        // Мокінг для UserAuthDto
+        UserAuthDto mockUserAuthDto = new UserAuthDto(1L, "john.doe", "password", null, Collections.emptyList());
+
+        Mockito.when(messageService.update(eq(mockUserAuthDto.getId()), eq(10L), any(MessageUpdateRequest.class)))
+                .thenReturn(sampleResponse);
 
         mockMvc.perform(put("/api/messages/edit/{id}", 10L)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -81,7 +90,7 @@ public class MessageControllerTest {
 
     @Test
     void edit_shouldReturn400_ifIdMismatch() throws Exception {
-        MessageUpdateRequest request = new MessageUpdateRequest(11L, "Mismatch");
+        MessageUpdateRequest request = new MessageUpdateRequest("Mismatch");
 
         mockMvc.perform(put("/api/messages/edit/{id}", 10L)
                         .contentType(MediaType.APPLICATION_JSON)
