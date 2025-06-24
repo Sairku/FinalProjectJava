@@ -53,7 +53,6 @@ public class MessageService {
             throw new SecurityException("You can only edit your own messages");
         }
 
-        // Оновлення тексту повідомлення
         message.setText(request.getText());
 
         Message updated = messageRepository.save(message);

@@ -1,6 +1,8 @@
 package com.facebook.controller;
 
+import com.facebook.config.GlobalExceptionHandler;
 import com.facebook.enums.Provider;
+import com.facebook.exception.NotFoundException;
 import com.facebook.middleware.CurrentUserArgumentResolver;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.facebook.dto.*;
@@ -20,14 +22,10 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.setup.StandaloneMockMvcBuilder;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -54,7 +52,9 @@ public class MessageControllerTest {
     private UserAuthDto currentUserData;
 
     private MockMvc buildMockMvc(boolean withCurrentUser) {
-        StandaloneMockMvcBuilder builder = MockMvcBuilders.standaloneSetup(messageController);
+        StandaloneMockMvcBuilder builder = MockMvcBuilders
+                .standaloneSetup(messageController)
+                .setControllerAdvice(new GlobalExceptionHandler());
 
         if (withCurrentUser) {
             builder.setCustomArgumentResolvers(new CurrentUserArgumentResolver());
@@ -77,8 +77,11 @@ public class MessageControllerTest {
     @Test
     void create_shouldReturn201() throws Exception {
         mockMvc = buildMockMvc(true);
-        // Оновлений запит без ID в MessageCreateRequest, оскільки ID отримується з @CurrentUser
         MessageCreateRequest request = new MessageCreateRequest(2L, "Hello!");
+        MessageResponse response = new MessageResponse();
+        response.setId(10L);
+        response.setText("Hello!");
+        when(messageService.create(1L, request)).thenReturn(response);
 
         mockMvc.perform(post("/api/messages/create")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -108,11 +111,17 @@ public class MessageControllerTest {
         mockMvc = buildMockMvc(true);
         MessageUpdateRequest request = new MessageUpdateRequest("Mismatch");
 
+        doThrow(new NotFoundException("Message not found"))
+                .when(messageService)
+                .update(1L, 10L, request);
+
         mockMvc.perform(put("/api/messages/edit/{id}", 10L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isNotFound());
+
     }
+
 
     @Test
     void markRead_shouldReturn200() throws Exception {
