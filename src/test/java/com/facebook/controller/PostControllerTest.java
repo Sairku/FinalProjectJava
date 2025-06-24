@@ -3,6 +3,7 @@ package com.facebook.controller;
 import com.facebook.dto.*;
 import com.facebook.enums.Provider;
 import com.facebook.middleware.CurrentUserArgumentResolver;
+import com.facebook.service.CommentService;
 import com.facebook.service.PostService;
 import com.facebook.service.UserAchievementService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,6 +38,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class PostControllerTest {
     @Mock
     private PostService postService;
+
+    @Mock
+    private CommentService commentService;
 
     @Mock
     private ModelMapper modelMapper;
@@ -83,11 +87,11 @@ public class PostControllerTest {
         mockMvc = buildMockMvc(true);
 
         PostCreateRequestDto request = new PostCreateRequestDto();
-        request.setDescription("Test post");
+        request.setText("Test post");
         request.setImages(List.of("http://image.com/test.jpg"));
 
         PostResponseDto response = new PostResponseDto();
-        response.setDescription(request.getDescription());
+        response.setText(request.getText());
         response.setImages(request.getImages());
         response.setUser(new UserShortDto(userId, "John", "Doe"));
 
@@ -100,7 +104,7 @@ public class PostControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.message").value("Post was created"))
                 .andExpect(jsonPath("$.error").value(false))
-                .andExpect(jsonPath("$.data.description").value("Test post"));
+                .andExpect(jsonPath("$.data.text").value("Test post"));
     }
 
     @Test
@@ -114,7 +118,7 @@ public class PostControllerTest {
         request.setImages(List.of("http://image.com/updated.jpg"));
 
         PostResponseDto response = new PostResponseDto();
-        response.setDescription(request.getDescription());
+        response.setText(request.getDescription());
         response.setImages(request.getImages());
 
         Mockito.when(postService.updatePost(postId, request)).thenReturn(response);
@@ -125,7 +129,7 @@ public class PostControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Post was updated"))
                 .andExpect(jsonPath("$.error").value(false))
-                .andExpect(jsonPath("$.data.description").value("Updated description"));
+                .andExpect(jsonPath("$.data.text").value("Updated description"));
     }
 
     @Test
@@ -143,8 +147,8 @@ public class PostControllerTest {
     void deletePost_shouldReturn200_whenDeleted() throws Exception {
         Long postId = 1L;
 
-        mockMvc = buildMockMvc(false);
-        Mockito.doNothing().when(postService).deletePost(postId);
+        mockMvc = buildMockMvc(true);
+        Mockito.doNothing().when(postService).deletePost(postId, userId);
 
         mockMvc.perform(delete("/api/posts/{id}", postId))
                 .andExpect(status().isOk())
@@ -180,7 +184,7 @@ public class PostControllerTest {
         commentResponse.setText("Great post!");
         commentResponse.setUser(new UserShortDto(userId, "John", "Doe"));
 
-        when(postService.addComment(postId, userId, "Great post!")).thenReturn(commentResponse);
+        when(commentService.addComment(postId, userId, "Great post!")).thenReturn(commentResponse);
 
         mockMvc.perform(post("/api/posts/{id}/comments", postId)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -200,27 +204,12 @@ public class PostControllerTest {
                 new CommentResponseDto(1L, new UserShortDto(userId, "John", "Doe"), "Nice!", null)
         );
 
-        when(postService.getComments(postId)).thenReturn(comments);
+        when(commentService.getPostComments(postId)).thenReturn(comments);
 
         mockMvc.perform(get("/api/posts/{id}/comments", postId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Comments retrieved successfully"))
                 .andExpect(jsonPath("$.error").value(false))
                 .andExpect(jsonPath("$.data[0].text").value("Nice!"));
-    }
-
-    @Test
-    void deleteComment_shouldReturn200_whenSuccessful() throws Exception {
-        mockMvc = buildMockMvc(true);
-        Long postId = 1L;
-        Long commentId = 10L;
-
-        Mockito.doNothing().when(postService).deleteComment(postId, userId, commentId);
-
-        mockMvc.perform(delete("/api/posts/{id}/comments/{commentId}", postId, commentId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("Comment deleted successfully"))
-                .andExpect(jsonPath("$.error").value(false))
-                .andExpect(jsonPath("$.data").doesNotExist());
     }
 }

@@ -21,10 +21,10 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @EntityListeners(AuditingEntityListener.class)
 public class Post extends AbstractEntity {
-    private String description;
+    private String text;
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
-    private ArrayList<PostImage> images = new ArrayList<>();
+    private List<PostImage> images = new ArrayList<>();
 
     @ManyToOne
     @JoinColumn(
@@ -48,6 +48,9 @@ public class Post extends AbstractEntity {
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments = new ArrayList<>();
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Repost> reposts = new ArrayList<>();
 
     @Column(name = "updated_at")
     @LastModifiedDate

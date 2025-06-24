@@ -58,7 +58,7 @@ class PostServiceTest {
     @Test
     void createPost_shouldReturnPostResponse() {
         PostCreateRequestDto request = new PostCreateRequestDto();
-        request.setDescription("Test post");
+        request.setText("Test post");
         request.setImages(List.of("img1.jpg", "img2.jpg"));
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(mockUser));
@@ -71,7 +71,7 @@ class PostServiceTest {
         PostResponseDto response = postService.createPost(1L, request);
 
         assertNotNull(response);
-        assertEquals("Test post", response.getDescription());
+        assertEquals("Test post", response.getText());
         assertEquals(2, response.getImages().size());
         assertEquals("John", response.getUser().getFirstName());
 
@@ -81,7 +81,7 @@ class PostServiceTest {
     @Test
     void createPost_shouldThrowNotFound_whenUserMissing() {
         PostCreateRequestDto request = new PostCreateRequestDto();
-        request.setDescription("Should fail");
+        request.setText("Should fail");
 
         when(userRepository.findById(999L)).thenReturn(Optional.empty());
 
@@ -92,7 +92,7 @@ class PostServiceTest {
     void updatePost_shouldReturnUpdatedPostResponse() {
         Post existingPost = new Post();
         existingPost.setId(1L);
-        existingPost.setDescription("Old description");
+        existingPost.setText("Old description");
         existingPost.setUser(mockUser);
 
         PostUpdateRequestDto request = new PostUpdateRequestDto();
@@ -109,7 +109,7 @@ class PostServiceTest {
         PostResponseDto response = postService.updatePost(1L, request);
 
         assertNotNull(response);
-        assertEquals("New description", response.getDescription());
+        assertEquals("New description", response.getText());
         assertEquals(2, response.getImages().size());
         assertEquals("Doe", response.getUser().getLastName());
 
@@ -130,9 +130,11 @@ class PostServiceTest {
     void deletePost_shouldCallRepositoryDelete_whenPostExists() {
         Post post = new Post();
         post.setId(1L);
+        post.setUser(mockUser);
+
         when(postRepository.findById(1L)).thenReturn(Optional.of(post));
 
-        postService.deletePost(1L);
+        postService.deletePost(1L, mockUser.getId());
 
         verify(postRepository).delete(post);
     }
@@ -141,7 +143,7 @@ class PostServiceTest {
     void deletePost_shouldThrowNotFound_whenPostMissing() {
         when(postRepository.findById(999L)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> postService.deletePost(999L));
+        assertThrows(NotFoundException.class, () -> postService.deletePost(999L, 999L));
     }
 
     @Test
@@ -203,129 +205,9 @@ class PostServiceTest {
     }
 
     @Test
-    void testAddComment() {
-        Post post = new Post();
-        post.setId(1L);
-        post.setComments(new ArrayList<>());
-        post.setUser(mockUser);
-
-        when(postRepository.findById(1L)).thenReturn(Optional.of(post));
-        when(userRepository.findById(2L)).thenReturn(Optional.of(mockUser));
-        when(postRepository.save(any(Post.class))).thenReturn(post);
-
-        CommentResponseDto response = postService.addComment(1L, 2L, "Hello world");
-
-        assertNotNull(response);
-        assertEquals("Hello world", response.getText());
-        assertEquals("John", response.getUser().getFirstName());
-        verify(postRepository).save(post);
-    }
-
-    @Test
-    void testAddComment_throwNotFoundPost() {
-        when(postRepository.findById(999L)).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> postService.addComment(999L, 1L, "Test comment"));
-    }
-
-    @Test
-    void testAddComment_throwNotFoundUser() {
-        Post post = new Post();
-        post.setId(1L);
-
-        when(postRepository.findById(1L)).thenReturn(Optional.of(post));
-        when(userRepository.findById(999L)).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> postService.addComment(1L, 999L, "Test comment"));
-    }
-
-    @Test
-    void testGetComments() {
-        Post post = new Post();
-        post.setId(1L);
-
-        Comment comment = new Comment();
-        comment.setId(100L);
-        comment.setText("Hi!");
-        comment.setUser(mockUser);
-        comment.setCreatedDate(LocalDateTime.now());
-
-        post.setComments(List.of(comment));
-        post.setUser(mockUser);
-
-        when(postRepository.findById(1L)).thenReturn(Optional.of(post));
-
-        List<CommentResponseDto> comments = postService.getComments(1L);
-
-        assertEquals(1, comments.size());
-        assertEquals("Hi!", comments.getFirst().getText());
-    }
-
-    @Test
-    void testGetComments_throwNotFoundPost() {
-        when(postRepository.findById(999L)).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> postService.addComment(999L, 1L, "Test comment"));
-    }
-
-    @Test
-    void testDeleteComment() {
-        Post post = new Post();
-        post.setId(1L);
-        post.setComments(new ArrayList<>());
-
-        Comment comment = new Comment();
-        comment.setId(10L);
-        comment.setUser(mockUser);
-        post.getComments().add(comment);
-
-        when(postRepository.findById(1L)).thenReturn(Optional.of(post));
-        when(commentRepository.findById(10L)).thenReturn(Optional.of(comment));
-
-        postService.deleteComment(1L, mockUser.getId(), 10L);
-
-        verify(commentRepository).delete(comment);
-    }
-
-    @Test
-    void testDeleteComment_throwNotFoundPost() {
-        when(postRepository.findById(999L)).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> postService.deleteComment(999L, 1L, 10L));
-    }
-
-    @Test
-    void testDeleteComment_throwNotFoundComment() {
-        Post post = new Post();
-        post.setId(1L);
-
-        when(postRepository.findById(1L)).thenReturn(Optional.of(post));
-        when(commentRepository.findById(999L)).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> postService.deleteComment(1L, 1L, 999L));
-    }
-
-    @Test
-    void testDeleteComment_throwInvalidUser() {
-        Post post = new Post();
-        post.setId(1L);
-        post.setComments(new ArrayList<>());
-
-        Comment comment = new Comment();
-        comment.setId(10L);
-        comment.setUser(mockUser);
-        post.getComments().add(comment);
-
-        when(postRepository.findById(1L)).thenReturn(Optional.of(post));
-        when(commentRepository.findById(10L)).thenReturn(Optional.of(comment));
-
-        assertThrows(IllegalArgumentException.class, () -> postService.deleteComment(1L, 999L, 10L));
-    }
-
-    @Test
     void createPost_shouldGiveBuzzStartedAchievement_whenFirstPost() {
         PostCreateRequestDto request = new PostCreateRequestDto();
-        request.setDescription("First post");
+        request.setText("First post");
         request.setImages(List.of("img1.jpg"));
 
         Post savedPost = new Post();
@@ -346,7 +228,7 @@ class PostServiceTest {
     @Test
     void createPost_shouldGiveAestheticDropAchievement_whenFivePostsWithPhotos() {
         PostCreateRequestDto request = new PostCreateRequestDto();
-        request.setDescription("Post 5");
+        request.setText("Post 5");
         request.setImages(List.of("img.jpg"));
 
         List<Post> existingPosts = new ArrayList<>();

@@ -13,9 +13,10 @@ import java.util.List;
 @AllArgsConstructor
 public class PostResponseDto {
     private UserShortDto user;
-    private String description;
+    private String text;
     private List<String> images = new ArrayList<>();
     private LocalDateTime createdDate;
     private int likesCount;
     private int commentsCount;
+    private int repostsCount;
 }
