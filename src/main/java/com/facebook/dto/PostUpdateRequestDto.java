@@ -11,7 +11,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PostUpdateRequestDto {
-    private String description;
+    private String text;
 
     private List<String> images = new ArrayList<>();
 }

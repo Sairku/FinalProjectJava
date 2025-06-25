@@ -98,7 +98,7 @@ class PostServiceTest {
         existingPost.setUser(mockUser);
 
         PostUpdateRequestDto request = new PostUpdateRequestDto();
-        request.setDescription("New description");
+        request.setText("New description");
         request.setImages(List.of("new1.jpg", "new2.jpg"));
 
         when(postRepository.findById(1L)).thenReturn(Optional.of(existingPost));
@@ -121,7 +121,7 @@ class PostServiceTest {
     @Test
     void updatePost_shouldThrowNotFound_whenPostMissing() {
         PostUpdateRequestDto request = new PostUpdateRequestDto();
-        request.setDescription("Nothing to update");
+        request.setText("Nothing to update");
 
         when(postRepository.findById(999L)).thenReturn(Optional.empty());
 

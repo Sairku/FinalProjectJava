@@ -115,11 +115,11 @@ public class PostControllerTest {
         Long postId = 1L;
 
         PostUpdateRequestDto request = new PostUpdateRequestDto();
-        request.setDescription("Updated description");
+        request.setText("Updated description");
         request.setImages(List.of("http://image.com/updated.jpg"));
 
         PostResponseDto response = new PostResponseDto();
-        response.setText(request.getDescription());
+        response.setText(request.getText());
         response.setImages(request.getImages());
 
         Mockito.when(postService.updatePost(postId, request)).thenReturn(response);

@@ -77,8 +77,8 @@ public class PostService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new NotFoundException("Not found post with ID: " + postId));
 
-        if (request.getDescription() != null) {
-            post.setText(request.getDescription());
+        if (request.getText() != null) {
+            post.setText(request.getText());
         }
 
         request.getImages().forEach(imageUrl -> {
