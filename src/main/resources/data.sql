@@ -30,7 +30,7 @@ ALTER TABLE verification_tokens
 ADD CONSTRAINT FK_tokens_user_id FOREIGN KEY (user_id)
 REFERENCES users (id) ON DELETE CASCADE ON UPDATE NO ACTION;
 
-CREATE TABLE IF NOT EXISTS `groups` (
+CREATE TABLE IF NOT EXISTS user_groups (
   id bigint NOT NULL AUTO_INCREMENT,
   name varchar(255) NOT NULL,
   description text,
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS `groups` (
   PRIMARY KEY (id)
 );
 
-ALTER TABLE `groups`
+ALTER TABLE user_groups
 ADD CONSTRAINT FK_groups_created_by FOREIGN KEY (created_by)
 REFERENCES users (id) ON DELETE SET NULL ON UPDATE NO ACTION;
 
@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS group_join_requests (
 
 ALTER TABLE group_join_requests
 ADD CONSTRAINT FK_group_requests_group_id FOREIGN KEY (group_id)
-REFERENCES `groups` (id) ON DELETE CASCADE ON UPDATE NO ACTION;
+REFERENCES user_groups (id) ON DELETE CASCADE ON UPDATE NO ACTION;
 
 ALTER TABLE group_join_requests
 ADD CONSTRAINT FK_group_requests_user_id FOREIGN KEY (user_id)
@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS group_members (
 
 ALTER TABLE group_members
 ADD CONSTRAINT FK_group_members_group_id FOREIGN KEY (group_id)
-REFERENCES `groups` (id) ON DELETE CASCADE ON UPDATE NO ACTION;
+REFERENCES user_groups (id) ON DELETE CASCADE ON UPDATE NO ACTION;
 
 ALTER TABLE group_members
 ADD CONSTRAINT FK_group_members_user_id FOREIGN KEY (user_id)
@@ -101,7 +101,7 @@ REFERENCES users (id) ON DELETE CASCADE ON UPDATE NO ACTION;
 
 ALTER TABLE posts
 ADD CONSTRAINT FK_posts_group_id FOREIGN KEY (group_id)
-REFERENCES `groups` (id) ON DELETE CASCADE ON UPDATE NO ACTION;
+REFERENCES user_groups (id) ON DELETE CASCADE ON UPDATE NO ACTION;
 
 CREATE TABLE IF NOT EXISTS post_images (
   id bigint NOT NULL AUTO_INCREMENT,

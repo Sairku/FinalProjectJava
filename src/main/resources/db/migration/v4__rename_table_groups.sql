@@ -1,0 +1,1 @@
+RENAME TABLE `groups` TO user_groups;
