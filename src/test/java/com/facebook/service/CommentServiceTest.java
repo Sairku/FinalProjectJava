@@ -1,6 +1,7 @@
 package com.facebook.service;
 
 import com.facebook.dto.CommentResponseDto;
+import com.facebook.dto.UserShortDto;
 import com.facebook.exception.NotFoundException;
 import com.facebook.model.Comment;
 import com.facebook.model.Post;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.modelmapper.ModelMapper;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -37,10 +39,14 @@ public class CommentServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private ModelMapper modelMapper;
+
     @InjectMocks
     private CommentService commentService;
 
     private User mockUser;
+    private UserShortDto mockUserShort;
 
     @BeforeEach
     void init() {
@@ -48,6 +54,11 @@ public class CommentServiceTest {
         mockUser.setId(1L);
         mockUser.setFirstName("John");
         mockUser.setLastName("Doe");
+
+        mockUserShort = new UserShortDto();
+        mockUserShort.setId(mockUser.getId());
+        mockUserShort.setFirstName(mockUser.getFirstName());
+        mockUserShort.setLastName(mockUser.getLastName());
     }
 
     @Test
@@ -59,6 +70,7 @@ public class CommentServiceTest {
 
         when(postRepository.findById(1L)).thenReturn(Optional.of(post));
         when(userRepository.findById(2L)).thenReturn(Optional.of(mockUser));
+        when(modelMapper.map(mockUser, UserShortDto.class)).thenReturn(mockUserShort);
         when(postRepository.save(any(Post.class))).thenReturn(post);
 
         CommentResponseDto response = commentService.addComment(1L, 2L, "Hello world");
@@ -136,6 +148,7 @@ public class CommentServiceTest {
         post.setUser(mockUser);
 
         when(postRepository.findById(1L)).thenReturn(Optional.of(post));
+        when(modelMapper.map(mockUser, UserShortDto.class)).thenReturn(mockUserShort);
 
         List<CommentResponseDto> comments = commentService.getPostComments(1L);
 

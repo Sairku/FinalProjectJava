@@ -1,6 +1,8 @@
 package com.facebook.controller;
 
+import com.facebook.config.GlobalExceptionHandler;
 import com.facebook.dto.UserAuthDto;
+import com.facebook.dto.UserShortDto;
 import com.facebook.enums.FriendStatus;
 import com.facebook.enums.Provider;
 import com.facebook.middleware.CurrentUserArgumentResolver;
@@ -27,6 +29,7 @@ import java.util.List;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -47,12 +50,14 @@ public class FriendControllerTest {
 
     private MockMvc mockMvc;
 
-    private User testFriend;
+    private UserShortDto testFriend;
     private Long userId = 1L;
     private Long friendId = 2L;
 
     private MockMvc buildMockMvc(boolean withCurrentUser) {
-        StandaloneMockMvcBuilder builder = MockMvcBuilders.standaloneSetup(friendController);
+        StandaloneMockMvcBuilder builder = MockMvcBuilders
+                .standaloneSetup(friendController)
+                .setControllerAdvice(new GlobalExceptionHandler());
 
         if (withCurrentUser) {
             builder.setCustomArgumentResolvers(new CurrentUserArgumentResolver());
@@ -69,7 +74,7 @@ public class FriendControllerTest {
 
     @BeforeEach
     void setUp() {
-        testFriend = new User();
+        testFriend = new UserShortDto();
         testFriend.setId(friendId);
         testFriend.setFirstName("Test Friend");
 
@@ -78,18 +83,19 @@ public class FriendControllerTest {
 
     @Test
     void addFriend_shouldReturnSuccess() throws Exception {
-        when(friendService.addFriendRequest(anyLong(), anyLong()))
-                .thenReturn(ResponseEntity.ok("Friend request sent"));
+        doNothing().when(friendService).addFriendRequest(anyLong(), anyLong());
 
-        mockMvc.perform(get("/api/friends/add/" + friendId))
-                .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Friend request sent")));
+        mockMvc.perform(post("/api/friends/add/" + friendId))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.message").value("Friend request sent successfully"))
+                .andExpect(jsonPath("$.error").value(false))
+                .andExpect(jsonPath("$.data").doesNotExist());
 
     }
 
     @Test
     void addFriend_selfRequest_shouldReturnBadRequest() throws Exception {
-        mockMvc.perform(get("/api/friends/add/" + userId))
+        mockMvc.perform(post("/api/friends/add/" + userId))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value(true))
                 .andExpect(jsonPath("$.message").value("You cannot send a friend request to yourself"));
@@ -98,29 +104,30 @@ public class FriendControllerTest {
 
     @Test
     void respondToFriendRequest_accept_shouldReturnSuccess() throws Exception {
-        when(friendService.responseToFriendRequest(anyLong(), anyLong(), eq(FriendStatus.ACCEPTED)))
-                .thenReturn(ResponseEntity.ok("Friend request accepted"));
+        doNothing().when(friendService).responseToFriendRequest(anyLong(), anyLong(), eq(FriendStatus.ACCEPTED));
 
-        mockMvc.perform(get("/api/friends/respond/" + friendId + "/accept"))
+        mockMvc.perform(post("/api/friends/respond/" + friendId + "/accepted"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Friend request accepted")));
-
+                .andExpect(jsonPath("$.error").value(false))
+                .andExpect(jsonPath("$.data").doesNotExist())
+                .andExpect(jsonPath("$.message").isNotEmpty());
     }
 
     @Test
     void respondToFriendRequest_decline_shouldReturnSuccess() throws Exception {
-        when(friendService.responseToFriendRequest(anyLong(), anyLong(), eq(FriendStatus.DECLINED)))
-                .thenReturn(ResponseEntity.ok("Friend request declined"));
+        doNothing().when(friendService).responseToFriendRequest(anyLong(), anyLong(), eq(FriendStatus.DECLINED));
 
-        mockMvc.perform(get("/api/friends/respond/" + friendId + "/decline"))
+        mockMvc.perform(post("/api/friends/respond/" + friendId + "/declined"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Friend request declined")));
+                .andExpect(jsonPath("$.error").value(false))
+                .andExpect(jsonPath("$.data").doesNotExist())
+                .andExpect(jsonPath("$.message").isNotEmpty());
 
     }
 
     @Test
     void respondToFriendRequest_invalidStatus_shouldReturnBadRequest() throws Exception {
-        mockMvc.perform(get("/api/friends/respond/" + friendId + "/invalid"))
+        mockMvc.perform(post("/api/friends/respond/" + friendId + "/invalid"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value(true))
                 .andExpect(jsonPath("$.message").value("Invalid status"));
@@ -129,48 +136,48 @@ public class FriendControllerTest {
 
     @Test
     void deleteFriend_shouldReturnSuccess() throws Exception {
-        when(friendService.deleteFriend(anyLong(), anyLong()))
-                .thenReturn(ResponseEntity.ok("Friend removed"));
+        doNothing().when(friendService).deleteFriend(anyLong(), anyLong());
 
         mockMvc.perform(delete("/api/friends/delete/" + friendId))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Friend removed")));
-
+                .andExpect(jsonPath("$.error").value(false))
+                .andExpect(jsonPath("$.data").doesNotExist())
+                .andExpect(jsonPath("$.message").isNotEmpty());
     }
 
     @Test
     void getFriends_shouldReturnFriendList() throws Exception {
-        List<User> friends = Arrays.asList(testFriend);
+        List<UserShortDto> friends = Arrays.asList(testFriend);
         when(friendService.getAllFriendUsers(anyLong())).thenReturn(friends);
 
         mockMvc.perform(get("/api/friends/get-friends"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(friendId))
-                .andExpect(jsonPath("$[0].firstName").value("Test Friend"));
+                .andExpect(jsonPath("$.data[0].id").value(friendId))
+                .andExpect(jsonPath("$.data[0].firstName").value("Test Friend"));
 
     }
 
     @Test
     void getRequests_shouldReturnRequestList() throws Exception {
-        List<User> requests = Arrays.asList(testFriend);
-        when(friendService.getAllUsersWhoHaveNotYetAccepted(anyLong())).thenReturn(requests);
+        List<UserShortDto> requests = Arrays.asList(testFriend);
+        when(friendService.getAllUsersWhoSentRequest(anyLong())).thenReturn(requests);
 
         mockMvc.perform(get("/api/friends/get-requests"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(friendId))
-                .andExpect(jsonPath("$[0].firstName").value("Test Friend"));
+                .andExpect(jsonPath("$.data[0].id").value(friendId))
+                .andExpect(jsonPath("$.data[0].firstName").value("Test Friend"));
 
     }
 
     @Test
     void getRecommendedFriends_shouldReturnRecommendedList() throws Exception {
-        List<User> recommended = Arrays.asList(testFriend);
+        List<UserShortDto> recommended = Arrays.asList(testFriend);
         when(friendService.getRecommendedFriends(anyLong())).thenReturn(recommended);
 
         mockMvc.perform(get("/api/friends/recommended"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(friendId))
-                .andExpect(jsonPath("$[0].firstName").value("Test Friend"));
+                .andExpect(jsonPath("$.data[0].id").value(friendId))
+                .andExpect(jsonPath("$.data[0].firstName").value("Test Friend"));
 
     }
 }

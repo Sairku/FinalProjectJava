@@ -10,6 +10,10 @@ import com.facebook.repository.FriendRepository;
 import com.facebook.repository.UserRepository;
 import lombok.AllArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -42,6 +46,13 @@ public class UserService {
         userCurrentDetailsDto.setFriendsRequests(friendsRequests);
 
         return userCurrentDetailsDto;
+    }
+
+    public Page<UserShortDto> getAllUsersExceptCurrent(long currentUserId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<User> usersPage = userRepository.findAllByIdNotOrderByCreatedDateDesc(currentUserId, pageable);
+
+        return usersPage.map(user -> modelMapper.map(user, UserShortDto.class));
     }
 
     public UserDetailsDto getUserDetails(long userId, long currentUserId) {
@@ -115,7 +126,6 @@ public class UserService {
         if (updatedData.getCurrentCity() != null) {
             user.setCurrentCity(updatedData.getCurrentCity());
         }
-
 
         User savedUser = userRepository.save(user);
         String achievementName = "Pink Profile";

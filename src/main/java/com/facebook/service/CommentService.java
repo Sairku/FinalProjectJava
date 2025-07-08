@@ -10,6 +10,7 @@ import com.facebook.repository.CommentRepository;
 import com.facebook.repository.PostRepository;
 import com.facebook.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -21,6 +22,7 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final ModelMapper modelMapper;
 
     public CommentResponseDto addComment(Long postId, Long userId, String text) {
         Post post = postRepository.findById(postId)
@@ -39,7 +41,7 @@ public class CommentService {
 
         return new CommentResponseDto(
                 comment.getId(),
-                new UserShortDto(user.getId(), user.getFirstName(), user.getLastName()),
+                modelMapper.map(user, UserShortDto.class),
                 comment.getText(),
                 comment.getCreatedDate()
         );
@@ -71,7 +73,7 @@ public class CommentService {
 
                     return new CommentResponseDto(
                             comment.getId(),
-                            new UserShortDto(user.getId(), user.getFirstName(), user.getLastName()),
+                            modelMapper.map(user, UserShortDto.class),
                             comment.getText(),
                             comment.getCreatedDate()
                     );

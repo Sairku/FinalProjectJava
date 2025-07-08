@@ -2,8 +2,8 @@ package com.facebook.controller;
 
 import com.facebook.annotation.CurrentUser;
 import com.facebook.dto.UserAuthDto;
+import com.facebook.dto.UserShortDto;
 import com.facebook.enums.FriendStatus;
-import com.facebook.model.User;
 import com.facebook.openapi.ErrorResponseWrapper;
 import com.facebook.openapi.VoidSuccessResponseWrapper;
 import com.facebook.service.FriendService;
@@ -20,7 +20,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Objects;
 
 @Slf4j
@@ -78,10 +77,10 @@ public class FriendController {
 
             }
     )
-    @GetMapping("/add/{friendId}")
+    @PostMapping("/add/{friendId}")
     public ResponseEntity<?> addFriend(@PathVariable Long friendId,
-                                            @Parameter(hidden = true)
-                                            @CurrentUser UserAuthDto currentUser) {
+                                       @Parameter(hidden = true)
+                                       @CurrentUser UserAuthDto currentUser) {
         Long userId = currentUser.getId();
         log.info("Adding friend with ID: {}", friendId);
 
@@ -93,16 +92,29 @@ public class FriendController {
                     null
             );
         }
-        return friendService.addFriendRequest(userId, friendId);
+
+        friendService.addFriendRequest(userId, friendId);
+
+        log.info("Adding friend request from user {} to user {}", userId, friendId);
+        return ResponseHandler.generateResponse(
+                HttpStatus.CREATED,
+                false,
+                "Friend request sent successfully",
+                null
+        );
     }
 
     @Operation(
             summary = "Respond to request",
             description = "Giving a response to a friend request",
+            parameters = {
+                    @Parameter(name = "friendId", description = "ID of the friend request to respond to", required = true),
+                    @Parameter(name = "status", description = "Response status (accepted or declined | ACCEPTED or DECLINED)", required = true)
+            },
             responses = {
                     @ApiResponse(
-                            responseCode = "201",
-                            description = "Friend request sent",
+                            responseCode = "200",
+                            description = "Friend request responded successfully",
                             content = @Content(
                                     mediaType = "application/json",
                                     schema = @Schema(
@@ -132,31 +144,52 @@ public class FriendController {
                     )
             }
     )
-    @GetMapping("/respond/{friendId}/{status}")
+    @PostMapping("/respond/{friendId}/{status}")
     public ResponseEntity<?> respondToFriendRequest(@PathVariable Long friendId,
-                                                         @PathVariable String status,
-                                                         @Parameter(hidden = true)
-                                                         @CurrentUser UserAuthDto currentUser) {
+                                                    @PathVariable String status,
+                                                    @Parameter(hidden = true)
+                                                    @CurrentUser UserAuthDto currentUser) {
         Long userId = currentUser.getId();
-        log.info("Responding to friend request with ID: {}", friendId);
-        return switch (status) {
-            case "accept" -> friendService.responseToFriendRequest(
-                    userId,
-                    friendId,
-                    FriendStatus.ACCEPTED
+
+
+        if (Objects.equals(userId, friendId)) {
+            return ResponseHandler.generateResponse(
+                    HttpStatus.BAD_REQUEST,
+                    true,
+                    "You cannot respond to your own friend request",
+                    null
             );
-            case "decline" -> friendService.responseToFriendRequest(
-                    userId,
-                    friendId,
-                    FriendStatus.DECLINED
-            );
-            default -> ResponseHandler.generateResponse(
+        }
+
+        status = status.toUpperCase();
+
+        if (!(FriendStatus.ACCEPTED.name().equals(status) ||
+                FriendStatus.DECLINED.name().equals(status))
+        ) {
+            log.info("Invalid status provided: {}", status);
+
+            return ResponseHandler.generateResponse(
                     HttpStatus.NOT_FOUND,
                     true,
                     "Invalid status",
                     null
             );
-        };
+        }
+
+        friendService.responseToFriendRequest(
+                userId,
+                friendId,
+                FriendStatus.valueOf(status)
+        );
+
+        log.info("Responding from user {} to friend {} request with {} status", userId, friendId, status);
+
+        return ResponseHandler.generateResponse(
+                HttpStatus.OK,
+                false,
+                "Friend request " + status.toLowerCase() + " successfully",
+                null
+        );
     }
 
     @Operation(
@@ -164,7 +197,7 @@ public class FriendController {
             description = "Delete a friend from the user's friend list",
             responses = {
                     @ApiResponse(
-                            responseCode = "201",
+                            responseCode = "200",
                             description = "Friend removed",
                             content = @Content(
                                     mediaType = "application/json",
@@ -172,36 +205,24 @@ public class FriendController {
                                             implementation = VoidSuccessResponseWrapper.class
                                     )
                             )
-                    ),
-                    @ApiResponse(
-                            responseCode = "400",
-                            description = "Validation failed",
-                            content = @Content(
-                                    mediaType = "application/json",
-                                    schema = @Schema(
-                                            implementation = ErrorResponseWrapper.class
-                                    )
-                            )
-                    ),
-                    @ApiResponse(
-                            responseCode = "404",
-                            description = "Friend not found",
-                            content = @Content(
-                                    mediaType = "application/json",
-                                    schema = @Schema(
-                                            implementation = ErrorResponseWrapper.class
-                                    )
-                            )
                     )
             }
     )
     @DeleteMapping("/delete/{friendId}")
     public ResponseEntity<?> deleteFriend(@PathVariable Long friendId,
-                                               @Parameter(hidden = true)
-                                               @CurrentUser UserAuthDto currentUser) {
+                                          @Parameter(hidden = true)
+                                          @CurrentUser UserAuthDto currentUser) {
         Long userId = currentUser.getId();
+
+        friendService.deleteFriend(userId, friendId);
+
         log.info("Deleting friend with ID: {}", friendId);
-        return friendService.deleteFriend(userId, friendId);
+        return ResponseHandler.generateResponse(
+                HttpStatus.OK,
+                false,
+                "Friend removed",
+                null
+        );
     }
 
     @Operation(
@@ -213,9 +234,7 @@ public class FriendController {
                             description = "Friends retrieved successfully",
                             content = @Content(
                                     mediaType = "application/json",
-                                    schema = @Schema(
-                                            implementation = User.class
-                                    )
+                                    schema = @Schema(type = "array", implementation = UserShortDto.class)
                             )
                     ),
                     @ApiResponse(
@@ -231,25 +250,28 @@ public class FriendController {
             }
     )
     @GetMapping("/get-friends")
-    public ResponseEntity<List<User>> getFriends(@Parameter(hidden = true)
-                                                 @CurrentUser UserAuthDto currentUser) {
+    public ResponseEntity<?> getFriends(@Parameter(hidden = true)
+                                        @CurrentUser UserAuthDto currentUser) {
         Long userId = currentUser.getId();
-        log.info("Getting friends for user with ID: {}", userId);
-        return ResponseEntity.ok(friendService.getAllFriendUsers(userId));
+
+        return ResponseHandler.generateResponse(
+                HttpStatus.OK,
+                false,
+                "Friends retrieved successfully",
+                friendService.getAllFriendUsers(userId)
+        );
     }
 
     @Operation(
             summary = "Get friend requests",
-            description = "Get all users who have sent friend requests to the user",
+            description = "Get all users who have sent friend requests",
             responses = {
                     @ApiResponse(
                             responseCode = "200",
                             description = "Friend requests retrieved successfully",
                             content = @Content(
                                     mediaType = "application/json",
-                                    schema = @Schema(
-                                            implementation = User.class
-                                    )
+                                    schema = @Schema(type = "array", implementation = UserShortDto.class)
                             )
                     ),
                     @ApiResponse(
@@ -265,11 +287,16 @@ public class FriendController {
             }
     )
     @GetMapping("/get-requests")
-    public ResponseEntity<List<User>> getRequests(@Parameter(hidden = true)
-                                                  @CurrentUser UserAuthDto currentUser) {
+    public ResponseEntity<?> getRequests(@Parameter(hidden = true)
+                                         @CurrentUser UserAuthDto currentUser) {
         Long userId = currentUser.getId();
-        log.info("Getting friends for user with ID: {}", userId);
-        return ResponseEntity.ok(friendService.getAllUsersWhoHaveNotYetAccepted(userId));
+
+        return ResponseHandler.generateResponse(
+                HttpStatus.OK,
+                false,
+                "Friend requests retrieved successfully",
+                friendService.getAllUsersWhoSentRequest(userId)
+        );
     }
 
     @Operation(
@@ -281,9 +308,7 @@ public class FriendController {
                             description = "Recommended friends retrieved successfully",
                             content = @Content(
                                     mediaType = "application/json",
-                                    schema = @Schema(
-                                            implementation = User.class
-                                    )
+                                    schema = @Schema(type = "array", implementation = UserShortDto.class)
                             )
                     ),
                     @ApiResponse(
@@ -299,10 +324,15 @@ public class FriendController {
             }
     )
     @GetMapping("/recommended")
-    public ResponseEntity<List<User>> getRecommendedFriends(@Parameter(hidden = true)
-                                                            @CurrentUser UserAuthDto currentUser) {
+    public ResponseEntity<?> getRecommendedFriends(@Parameter(hidden = true)
+                                                   @CurrentUser UserAuthDto currentUser) {
         Long userId = currentUser.getId();
-        log.info("Getting recommended friends for user with ID: {}", userId);
-        return ResponseEntity.ok(friendService.getRecommendedFriends(userId));
+
+        return ResponseHandler.generateResponse(
+                HttpStatus.OK,
+                false,
+                "Recommended friends retrieved successfully",
+                friendService.getRecommendedFriends(userId)
+        );
     }
 }

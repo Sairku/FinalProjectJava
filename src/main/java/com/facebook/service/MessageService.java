@@ -60,8 +60,6 @@ public class MessageService {
         return mapToResponse(updated);
     }
 
-
-
     public MessageResponse read(long id) {
         Message message = messageRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Message not found"));
@@ -85,16 +83,21 @@ public class MessageService {
     }
 
     private MessageResponse mapToResponse(Message message) {
+        User sender = message.getSender();
+        User receiver = message.getReceiver();
+
         UserShortDto senderDto = new UserShortDto(
-                message.getSender().getId(),
-                message.getSender().getFirstName(),
-                message.getSender().getLastName()
+                sender.getId(),
+                sender.getFirstName(),
+                sender.getLastName(),
+                sender.getAvatarUrl()
         );
 
         UserShortDto receiverDto = new UserShortDto(
-                message.getReceiver().getId(),
-                message.getReceiver().getFirstName(),
-                message.getReceiver().getLastName()
+                receiver.getId(),
+                receiver.getFirstName(),
+                receiver.getLastName(),
+                receiver.getAvatarUrl()
         );
 
         return new MessageResponse(

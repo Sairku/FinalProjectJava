@@ -1,16 +1,15 @@
 package com.facebook.service;
 
+import com.facebook.dto.UserShortDto;
 import com.facebook.enums.FriendStatus;
 import com.facebook.exception.NotFoundException;
 import com.facebook.model.Friend;
 import com.facebook.model.User;
 import com.facebook.repository.FriendRepository;
 import com.facebook.repository.UserRepository;
-import com.facebook.util.ResponseHandler;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -23,6 +22,7 @@ import java.util.Optional;
 public class FriendService {
     private final FriendRepository friendRepository;
     private final UserRepository userRepository;
+    private final ModelMapper modelMapper;
 
     public boolean isFriend(Long userId, Long friendId) {
         if (friendRepository.findByUserIdAndFriendId(userId, friendId).isPresent())
@@ -31,70 +31,61 @@ public class FriendService {
             return friendRepository.findByUserIdAndFriendId(friendId, userId).isPresent();
     }
 
-    // User trying to get a friend (like object Friend) by his friend's id (friendId)
-    public Friend getFriendById(Long userId, Long friendId) {
-        return friendRepository.findByUserIdAndFriendId(userId, friendId)
-                .orElseThrow(() -> new NotFoundException("Friend not found"));
-    }
-
-    // User trying to get a friend (like object User) by his friend's id (friendId)
-    public User getUserWhoIsFriendById(Long userId, Long friendId) {
-        return getFriendById(userId, friendId).getFriend();
-    }
-
-    public List<Friend> getAllFriendRequests(Long userId) {
-        return friendRepository.findByUserId(userId);
-    }
-
-    // Get all friends (like object Friend) of a user with 'userId'
-    public List<Friend> getAllFriends(Long userId) {
-        return friendRepository.findByStatusAndUserId(FriendStatus.ACCEPTED, userId);
-    }
-
-    // Get all friends (like object User) of a user with 'userId'
-    public List<User> getAllFriendUsers(Long userId) {
+    // Get all friends
+    public List<UserShortDto> getAllFriendUsers(Long userId) {
         return friendRepository.findByStatusAndUserId(FriendStatus.ACCEPTED, userId)
                 .stream()
-                .map(Friend::getFriend)
+                .map(friend -> modelMapper.map(friend.getFriend(), UserShortDto.class))
                 .toList();
     }
 
-    // Get all friends (like object Friend) to whom the user with 'userId' sent a request but not yet accepted
-    public List<Friend> getAllFriendsWhoHaveNotYetAccepted(Long userId) {
-        return friendRepository.findByStatusAndUserId(FriendStatus.PENDING, userId);
-    }
-
-    // Get all friends (like object Friend)
-    // who sent a request to the user with 'userId' but user hasn't accepted them yet
-    public List<Friend> getAllFriendsWhoSentRequest(Long userId) {
-        return friendRepository.findByStatusAndFriendId(FriendStatus.PENDING, userId);
-    }
-
-    // Get all friends (like object User) of a user with 'userId'
-    public List<User> getAllUsersWhoAreFriends(Long userId) {
-        return friendRepository.findByStatusAndUserId(FriendStatus.ACCEPTED, userId)
-                .stream()
-                .map(Friend::getFriend)
-                .toList();
-    }
-
-    // Get all friends (like object User) to whom the user with 'userId' sent a request but not yet accepted
-    public List<User> getAllUsersWhoHaveNotYetAccepted(Long userId) {
+    // Get all friend requests
+    public List<UserShortDto> getAllUsersWhoSentRequest(Long userId) {
         return friendRepository.findByStatusAndUserId(FriendStatus.PENDING, userId)
                 .stream()
-                .map(Friend::getFriend)
+                .map(friend -> modelMapper.map(friend.getFriend(), UserShortDto.class))
                 .toList();
     }
 
-    // Get all friends (like object User)
-    // who sent a request to the user with 'userId' but user hasn't accepted them yet
-    public List<User> getAllUsersWhoSentRequest(Long userId) {
-        return getAllFriendsWhoSentRequest(userId).stream()
-                .map(Friend::getFriend)
-                .toList();
+    public List<UserShortDto> getRecommendedFriends(Long userId) {
+        List<UserShortDto> currentUserFriends = getAllFriendUsers(userId);
+
+        if (currentUserFriends.isEmpty()) {
+//            List<User> allUsers = userRepository.findAllByIdNot(userId);
+//            Collections.shuffle(allUsers);
+//
+//            return allUsers.stream()
+//                    .limit(40)
+//                    .map(user -> modelMapper.map(user, UserShortDto.class))
+//                    .toList();
+            List<User> topUsers = userRepository.findTop40ByIdNotOrderByCreatedDateDesc(userId);
+            return topUsers.stream()
+                    .map(user -> modelMapper.map(user, UserShortDto.class))
+                    .toList();
+        }
+
+        List<UserShortDto> result = new ArrayList<>();
+
+        for (UserShortDto friend : currentUserFriends) {
+            List<UserShortDto> friendsOfFriend = new ArrayList<>(getAllFriendUsers(friend.getId()));
+
+            List<UserShortDto> mutualFriends = friendsOfFriend.stream()
+                    .filter(currentUserFriends::contains)
+                    .toList();
+
+            friendsOfFriend.removeAll(mutualFriends); // Remove mutual friends
+
+            result.addAll(friendsOfFriend);
+
+            if (result.size() >= 40) {
+                break; // Limit to 40 recommendations
+            }
+        }
+
+        return result;
     }
 
-    public ResponseEntity<Object> addFriendRequest(Long userId, Long friendId) {
+    public void addFriendRequest(Long userId, Long friendId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
@@ -103,153 +94,39 @@ public class FriendService {
 
         if (friendRepository.findByUserIdAndFriendId(userId, friendId).isPresent() ||
                 friendRepository.findByUserIdAndFriendId(friendId, userId).isPresent()) {
-            return ResponseHandler.generateResponse(
-                    HttpStatus.BAD_REQUEST,
-                    true,
-                    "Friend request already exists",
-                    null
-            );
+            throw new IllegalArgumentException("Friend request already exists");
         }
 
-        friendRepository.save(new Friend(FriendStatus.PENDING, user, friend, null));
-        log.info("Adding friend request from user {} to user {}", userId, friendId);
-        return ResponseHandler.generateResponse(
-                HttpStatus.OK,
-                false,
-                "Friend request sent",
-                null
-        );
+        friendRepository.save(new Friend(FriendStatus.PENDING, friend, user, null));
     }
 
-    public ResponseEntity<Object> responseToFriendRequest(Long userId, Long friendId ,FriendStatus status) {
-        if (userRepository.findById(userId).isEmpty()) {
-            return ResponseHandler.generateResponse(
-                    HttpStatus.BAD_REQUEST,
-                    true,
-                    "User not found",
-                    null
-            );
-        }
-        if (userRepository.findById(friendId).isEmpty()) {
-            return ResponseHandler.generateResponse(
-                    HttpStatus.BAD_REQUEST,
-                    true,
-                    "Friend not found",
-                    null
-            );
+    public void responseToFriendRequest(Long userId, Long friendId, FriendStatus status) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        User friend = userRepository.findById(friendId)
+                .orElseThrow(() -> new NotFoundException("Friend not found"));
+
+        Optional<Friend> friendRequest = friendRepository.findByUserIdAndFriendId(userId, friendId);
+
+        if (friendRequest.isEmpty()) {
+            throw new IllegalArgumentException("Friend request doesn't exist");
         }
 
-        Optional<Friend> existingRequest = friendRepository.findByUserIdAndFriendId(friendId, userId);
-        if (existingRequest.isEmpty()) {
-            return ResponseHandler.generateResponse(
-                    HttpStatus.BAD_REQUEST,
-                    true,
-                    "Friend request doesn't exist",
-                    null
-            );
-        }
-
-        if (status == FriendStatus.ACCEPTED) {
-            existingRequest.get().setStatus(FriendStatus.ACCEPTED);
-            friendRepository.save(existingRequest.get());
-            log.info("Friend request from user {} to user {} accepted", friendId, userId);
-            return ResponseHandler.generateResponse(
-                    HttpStatus.OK,
-                    false,
-                    "Friend request accepted",
-                    null
-            );
+        if (status.equals(FriendStatus.ACCEPTED)) {
+            friendRequest.get().setStatus(FriendStatus.ACCEPTED);
+            friendRepository.save(friendRequest.get());
+            friendRepository.save(new Friend(FriendStatus.ACCEPTED, friend, user, null));
         } else if (status == FriendStatus.DECLINED) {
-            friendRepository.delete(existingRequest.get());
-            log.info("Friend request from user {} to user {} rejected", friendId, userId);
-            return ResponseHandler.generateResponse(
-                    HttpStatus.OK,
-                    false,
-                    "Friend request rejected",
-                    null
-            );
-        } else {
-            return ResponseHandler.generateResponse(
-                    HttpStatus.BAD_REQUEST,
-                    true,
-                    "Invalid status",
-                    null
-            );
+            friendRepository.delete(friendRequest.get());
         }
     }
 
-    public ResponseEntity<Object> deleteFriend(Long userId, Long friendId) {
-        if (userRepository.findById(userId).isEmpty()) {
-            return ResponseHandler.generateResponse(
-                    HttpStatus.BAD_REQUEST,
-                    true,
-                    "User not found",
-                    null
-            );
-        }
-        if (userRepository.findById(friendId).isEmpty()) {
-            return ResponseHandler.generateResponse(
-                    HttpStatus.BAD_REQUEST,
-                    true,
-                    "Friend not found",
-                    null
-            );
-        }
-
+    public void deleteFriend(Long userId, Long friendId) {
         Optional<Friend> firstExistingRequest = friendRepository.findByUserIdAndFriendId(userId, friendId);
         Optional<Friend> secondExistingRequest = friendRepository.findByUserIdAndFriendId(friendId, userId);
 
-        if (firstExistingRequest.isPresent()) {
-            friendRepository.delete(firstExistingRequest.get());
-            log.info("Deleting friend {} from user {}", friendId, userId);
-            return ResponseHandler.generateResponse(
-                    HttpStatus.OK,
-                    false,
-                    "Friend deleted",
-                    null
-            );
-        } else {
-            if (secondExistingRequest.isPresent()) {
-                friendRepository.delete(secondExistingRequest.get());
-                log.info("Deleting friend {} from user {}", userId, friendId);
-                return ResponseHandler.generateResponse(
-                        HttpStatus.OK,
-                        false,
-                        "Friend deleted",
-                        null
-                );
-            }
-        }
-
-        return ResponseHandler.generateResponse(
-                HttpStatus.BAD_REQUEST,
-                true,
-                "Friend request doesn't exist",
-                null
-        );
-
-    }
-
-    public List<User> getRecommendedFriends(Long userId) {
-        List<User> friends = getAllUsersWhoAreFriends(userId);
-
-        List<User> result = new ArrayList<>();
-        boolean enough = false;
-
-        for (User friend : friends) {
-            List<User> friendsOfFriend = getAllUsersWhoAreFriends(friend.getId());
-            for (User friendOfFriend : friendsOfFriend){
-                if (friendOfFriend.getId() != userId && !result.contains(friendOfFriend) && !friends.contains(friendOfFriend))
-                    result.add(friendOfFriend);
-                if (result.size() >= 40)
-                    enough = true;
-                if (enough)
-                    break;
-            }
-            if (enough)
-                break;
-        }
-
-        return result;
+        firstExistingRequest.ifPresent(friendRepository::delete);
+        secondExistingRequest.ifPresent(friendRepository::delete);
     }
 }

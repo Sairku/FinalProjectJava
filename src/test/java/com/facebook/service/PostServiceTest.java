@@ -372,6 +372,9 @@ class PostServiceTest {
         User friend = new User();
         friend.setId(2L);
 
+        UserShortDto friendShort = new UserShortDto();
+        friendShort.setId(friend.getId());
+
         Post post2 = new Post();
         post2.setId(2L);
         post2.setText("Friend Post");
@@ -380,7 +383,7 @@ class PostServiceTest {
 
         when(userRepository.findById(mockUserId)).thenReturn(Optional.of(mockUser));
         when(postRepository.findAllByUserId(mockUserId)).thenReturn(Optional.of(List.of(post1)));
-        when(friendService.getAllFriendUsers(mockUserId)).thenReturn(List.of(friend));
+        when(friendService.getAllFriendUsers(mockUserId)).thenReturn(List.of(friendShort));
         when(postRepository.findAllByUserId(friend.getId())).thenReturn(Optional.of(List.of(post2)));
 
         List<PostResponseDto> response = postService.getUserAndFriendsPosts(mockUserId);

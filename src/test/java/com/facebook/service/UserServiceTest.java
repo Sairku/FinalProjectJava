@@ -1,6 +1,7 @@
 package com.facebook.service;
 
 import com.facebook.dto.UserDetailsDto;
+import com.facebook.dto.UserShortDto;
 import com.facebook.dto.UserUpdateRequestDto;
 import com.facebook.enums.FriendStatus;
 import com.facebook.enums.Gender;
@@ -16,9 +17,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.sql.Date;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -237,4 +243,47 @@ public class UserServiceTest {
         verify(userRepository, times(1)).findById(1L);
     }
 
+    @Test
+    void testGetAllUsersExceptCurrent() {
+        long currentUserId = 1L;
+        int page = 0;
+        int size = 2;
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        // Mock users
+        User user1 = new User();
+        user1.setId(2L);
+        user1.setFirstName("Alice");
+        user1.setLastName("Smith");
+
+        User user2 = new User();
+        user2.setId(3L);
+        user2.setFirstName("Bob");
+        user2.setLastName("Johnson");
+
+        List<User> users = List.of(user1, user2);
+        Page<User> usersPage = new PageImpl<>(users, pageable, users.size());
+
+        when(userRepository.findAllByIdNotOrderByCreatedDateDesc(currentUserId, pageable))
+                .thenReturn(usersPage);
+
+        UserShortDto dto1 = new UserShortDto(user1.getId(), user1.getFirstName(), user1.getLastName(), null);
+        UserShortDto dto2 = new UserShortDto(user2.getId(), user2.getFirstName(), user2.getLastName(), null);
+
+        when(modelMapper.map(user1, UserShortDto.class)).thenReturn(dto1);
+        when(modelMapper.map(user2, UserShortDto.class)).thenReturn(dto2);
+
+        Page<UserShortDto> result = userService.getAllUsersExceptCurrent(currentUserId, page, size);
+
+        assertNotNull(result);
+        assertEquals(2, result.getContent().size());
+
+        assertEquals(dto1, result.getContent().get(0));
+        assertEquals(dto2, result.getContent().get(1));
+
+        verify(userRepository, times(1)).findAllByIdNotOrderByCreatedDateDesc(currentUserId, pageable);
+        verify(modelMapper, times(1)).map(user1, UserShortDto.class);
+        verify(modelMapper, times(1)).map(user2, UserShortDto.class);
+    }
 }

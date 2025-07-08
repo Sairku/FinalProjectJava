@@ -1,27 +1,26 @@
 package com.facebook.service;
 
+import com.facebook.dto.UserShortDto;
 import com.facebook.enums.FriendStatus;
 import com.facebook.exception.NotFoundException;
 import com.facebook.model.Friend;
 import com.facebook.model.User;
 import com.facebook.repository.FriendRepository;
 import com.facebook.repository.UserRepository;
-import com.facebook.util.ResponseHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.modelmapper.ModelMapper;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class FriendServiceTest {
@@ -29,18 +28,21 @@ public class FriendServiceTest {
     private FriendRepository friendRepository;
     @Mock
     private UserRepository userRepository;
+    @Mock
+    private ModelMapper modelMapper;
 
     @InjectMocks
     private FriendService friendService;
 
     private User user = new User();
     private User friend = new User();
+    private UserShortDto friendShort = new UserShortDto();
     private User notYetFriend = new User();
     private Friend friendObject = new Friend();
     private Friend notYetFriendObject = new Friend();
 
     @BeforeEach
-    void setUp(){
+    void setUp() {
         user.setId(1L);
         friend.setId(2L);
         notYetFriend.setId(3L);
@@ -50,6 +52,10 @@ public class FriendServiceTest {
         user.setLastName("Last Name 1");
         friend.setLastName("Last Name 2");
         notYetFriend.setLastName("Last Name 3");
+
+        friendShort.setId(friend.getId());
+        friendShort.setFirstName(friend.getFirstName());
+        friendShort.setLastName(friend.getLastName());
 
         friendObject.setId(1L);
         friendObject.setUser(user);
@@ -63,110 +69,31 @@ public class FriendServiceTest {
     }
 
     @Test
-    void testGetFriendById() {
-        when(friendRepository.findByUserIdAndFriendId(1L, 2L))
-                .thenReturn(Optional.of(friendObject));
-
-        Friend result = friendService.getFriendById(1L, 2L);
-
-        assertEquals(friendObject, result);
-    }
-
-    @Test
-    void testGetUserWhoIsFriendById() {
-        when(friendRepository.findByUserIdAndFriendId(1L, 2L))
-                .thenReturn(Optional.of(friendObject));
-
-        User result = friendService.getUserWhoIsFriendById(1L, 2L);
-
-        assertEquals(friend, result);
-    }
-
-    @Test
-    void testGetAllFriendRequests() {
-        when(friendRepository.findByUserId(1L))
-                .thenReturn(List.of(friendObject));
-
-        List<Friend> result = friendService.getAllFriendRequests(1L);
-
-        assertEquals(1, result.size());
-        assertEquals(friendObject, result.getFirst());
-    }
-
-    @Test
-    void testGetAllFriends() {
-        when(friendRepository.findByStatusAndUserId(FriendStatus.ACCEPTED, 1L))
-                .thenReturn(List.of(friendObject));
-
-        List<Friend> result = friendService.getAllFriends(1L);
-
-        assertEquals(1, result.size());
-        assertEquals(friendObject, result.getFirst());
-    }
-
-    @Test
     void testGetAllFriendUsers() {
         when(friendRepository.findByStatusAndUserId(FriendStatus.ACCEPTED, 1L))
                 .thenReturn(List.of(friendObject));
+        when(modelMapper.map(friendObject.getFriend(), UserShortDto.class)).thenReturn(friendShort);
 
-        List<User> result = friendService.getAllFriendUsers(1L);
-
-        assertEquals(1, result.size());
-        assertEquals(friend, result.getFirst());
-    }
-
-    @Test
-    void testGetAllFriendsWhoHaveNotYetAccepted() {
-        when(friendRepository.findByStatusAndUserId(FriendStatus.PENDING, 1L))
-                .thenReturn(List.of(notYetFriendObject));
-
-        List<Friend> result = friendService.getAllFriendsWhoHaveNotYetAccepted(1L);
+        List<UserShortDto> result = friendService.getAllFriendUsers(1L);
 
         assertEquals(1, result.size());
-        assertEquals(notYetFriendObject, result.getFirst());
-    }
-
-    @Test
-    void testGetAllFriendsWhoSentRequest() {
-        when(friendRepository.findByStatusAndFriendId(FriendStatus.PENDING, 1L))
-                .thenReturn(List.of(notYetFriendObject));
-
-        List<Friend> result = friendService.getAllFriendsWhoSentRequest(1L);
-
-        assertEquals(1, result.size());
-        assertEquals(notYetFriendObject, result.getFirst());
-    }
-
-    @Test
-    void testGetAllUsersWhoAreFriends() {
-        when(friendRepository.findByStatusAndUserId(FriendStatus.ACCEPTED, 1L))
-                .thenReturn(List.of(friendObject));
-
-        List<User> result = friendService.getAllUsersWhoAreFriends(1L);
-        assertEquals(1, result.size());
-        assertEquals(friend, result.getFirst());
-    }
-
-    @Test
-    void testGetAllUsersWhoHaveNotYetAccepted() {
-        when(friendRepository.findByStatusAndUserId(FriendStatus.PENDING, 1L))
-                .thenReturn(List.of(notYetFriendObject));
-
-        List<User> result = friendService.getAllUsersWhoHaveNotYetAccepted(1L);
-
-        assertEquals(1, result.size());
-        assertEquals(notYetFriend, result.getFirst());
+        assertEquals(friendShort, result.getFirst());
     }
 
     @Test
     void testGetAllUsersWhoSentRequest() {
-        when(friendRepository.findByStatusAndFriendId(FriendStatus.PENDING, 1L))
-                .thenReturn(List.of(notYetFriendObject));
+        UserShortDto notYetFriendDto = new UserShortDto();
+        notYetFriendDto.setId(notYetFriend.getId());
+        notYetFriendDto.setFirstName(notYetFriend.getFirstName());
 
-        List<User> result = friendService.getAllUsersWhoSentRequest(1L);
+        when(friendRepository.findByStatusAndUserId(FriendStatus.PENDING, 1L))
+                .thenReturn(List.of(notYetFriendObject));
+        when(modelMapper.map(notYetFriend, UserShortDto.class)).thenReturn(notYetFriendDto);
+
+        List<UserShortDto> result = friendService.getAllUsersWhoSentRequest(1L);
 
         assertEquals(1, result.size());
-        assertEquals(notYetFriend, result.getFirst());
+        assertEquals(notYetFriendDto, result.getFirst());
     }
 
     @Test
@@ -179,9 +106,8 @@ public class FriendServiceTest {
                 .thenReturn(Optional.empty());
         when(friendRepository.save(any(Friend.class))).thenReturn(notYetFriendObject);
 
-        ResponseEntity<?> result = friendService.addFriendRequest(1L, 3L);
-
-        assertEquals(HttpStatus.OK, result.getStatusCode());
+        friendService.addFriendRequest(1L, 3L);
+        verify(friendRepository).save(any(Friend.class));
     }
 
     @Test
@@ -191,13 +117,11 @@ public class FriendServiceTest {
         when(friendRepository.findByUserIdAndFriendId(1L, 2L))
                 .thenReturn(Optional.of(friendObject));
 
-        ResponseEntity<?> result = friendService.addFriendRequest(1L, 2L);
-
-        assertEquals(ResponseHandler.generateResponse(HttpStatus.BAD_REQUEST, true, "Friend request already exists", null), result);
+        assertThrows(IllegalArgumentException.class, () -> friendService.addFriendRequest(1L, 2L));
     }
 
     @Test
-    void testAddFriendRequest_UserNotFound(){
+    void testAddFriendRequest_UserNotFound() {
         when(userRepository.findById(4L)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () ->
@@ -205,7 +129,7 @@ public class FriendServiceTest {
     }
 
     @Test
-    void testAddFriendRequest_FriendNotFound(){
+    void testAddFriendRequest_FriendNotFound() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(userRepository.findById(4L)).thenReturn(Optional.empty());
 
@@ -215,110 +139,123 @@ public class FriendServiceTest {
 
     @Test
     void testResponseToFriendRequest_whenAccepted_OK() {
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userRepository.findById(2L)).thenReturn(Optional.of(friend));
+        when(userRepository.findById(2L)).thenReturn(Optional.of(user));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(friend));
         when(friendRepository.findByUserIdAndFriendId(2L, 1L)).thenReturn(Optional.of(friendObject));
 
-        ResponseEntity<Object> response = friendService.responseToFriendRequest(1L, 2L, FriendStatus.ACCEPTED);
+        friendService.responseToFriendRequest(2L, 1L, FriendStatus.ACCEPTED);
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(FriendStatus.ACCEPTED, friendObject.getStatus());
+        verify(friendRepository, times(2)).save(any(Friend.class));
     }
 
     @Test
     void testResponseToFriendRequest_whenDeclined_OK() {
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userRepository.findById(2L)).thenReturn(Optional.of(friend));
+        when(userRepository.findById(2L)).thenReturn(Optional.of(user));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(friend));
         when(friendRepository.findByUserIdAndFriendId(2L, 1L)).thenReturn(Optional.of(friendObject));
 
-        ResponseEntity<Object> response = friendService.responseToFriendRequest(1L, 2L, FriendStatus.DECLINED);
+        friendService.responseToFriendRequest(2L, 1L, FriendStatus.DECLINED);
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(friendRepository).delete(any(Friend.class));
     }
 
     @Test
-    void testResponseToFriendRequest_BadRequest(){
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userRepository.findById(2L)).thenReturn(Optional.of(friend));
-        when(friendRepository.findByUserIdAndFriendId(2L, 1L)).thenReturn(Optional.of(friendObject));
-
-        ResponseEntity<Object> response = friendService.responseToFriendRequest(1L, 2L, FriendStatus.PENDING);
-
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-    }
-
-    @Test
-    void testResponseToFriendRequest_FriendRequestNotFound(){
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userRepository.findById(2L)).thenReturn(Optional.of(friend));
+    void testResponseToFriendRequest_FriendRequestNotFound() {
+        when(userRepository.findById(2L)).thenReturn(Optional.of(user));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(friend));
         when(friendRepository.findByUserIdAndFriendId(2L, 1L)).thenReturn(Optional.empty());
 
-        ResponseEntity<Object> response = friendService.responseToFriendRequest(1L, 2L, FriendStatus.ACCEPTED);
-
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertThrows(IllegalArgumentException.class, () ->
+                friendService.responseToFriendRequest(2L, 1L, FriendStatus.ACCEPTED));
     }
 
     @Test
     void deleteFriend_WhenValid_ShouldDeleteFriend() {
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userRepository.findById(2L)).thenReturn(Optional.of(friend));
         when(friendRepository.findByUserIdAndFriendId(1L, 2L)).thenReturn(Optional.of(friendObject));
 
-        ResponseEntity<Object> response = friendService.deleteFriend(1L, 2L);
+        friendService.deleteFriend(1L, 2L);
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(friendRepository, atLeastOnce()).delete(any(Friend.class));
     }
 
     @Test
-    void deleteFriend_WhenRequestNotFound_ShouldReturnBadRequest() {
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userRepository.findById(2L)).thenReturn(Optional.of(friend));
-        when(friendRepository.findByUserIdAndFriendId(1L, 2L)).thenReturn(Optional.empty());
+    void testGetRecommendedFriends_NoFriends() {
+        when(friendService.getAllFriendUsers(1L)).thenReturn(List.of());
 
-        ResponseEntity<Object> response = friendService.deleteFriend(1L, 2L);
+        User otherUser1 = new User();
+        otherUser1.setId(2L);
+        otherUser1.setFirstName("Alice");
+        otherUser1.setLastName("Smith");
 
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        User otherUser2 = new User();
+        otherUser2.setId(3L);
+        otherUser2.setFirstName("Bob");
+        otherUser2.setLastName("Jones");
+
+        List<User> topUsers = List.of(otherUser1, otherUser2);
+
+        UserShortDto dto1 = new UserShortDto(otherUser1.getId(), otherUser1.getFirstName(), otherUser1.getLastName(), null);
+        UserShortDto dto2 = new UserShortDto(otherUser2.getId(), otherUser2.getFirstName(), otherUser2.getLastName(), null);
+
+        when(userRepository.findTop40ByIdNotOrderByCreatedDateDesc(1L)).thenReturn(topUsers);
+        when(modelMapper.map(otherUser1, UserShortDto.class)).thenReturn(dto1);
+        when(modelMapper.map(otherUser2, UserShortDto.class)).thenReturn(dto2);
+
+        List<UserShortDto> result = friendService.getRecommendedFriends(1L);
+
+        assertEquals(2, result.size());
+        assertTrue(result.contains(dto1));
+        assertTrue(result.contains(dto2));
     }
 
     @Test
-    void getRecommendedFriends_ShouldReturnRecommendedFriends() {
-        // Setup test data
-        User user3 = new User();
-        user3.setId(3L);
-        user3.setFirstName("User Three");
+    void testGetRecommendedFriends_WithFriends() {
+        User friendUser = new User();
+        friendUser.setId(2L);
+        friendUser.setFirstName("Friend");
+        friendUser.setLastName("User");
 
-        User user4 = new User();
-        user4.setId(4L);
-        user4.setFirstName("User Four");
-
-        Friend friend1 = new Friend();
-        friend1.setUser(user);
-        friend1.setFriend(friend);
-        friend1.setStatus(FriendStatus.ACCEPTED);
-
-        Friend friend2 = new Friend();
-        friend2.setUser(friend);
-        friend2.setFriend(user3);
-        friend2.setStatus(FriendStatus.ACCEPTED);
-
-        Friend friend3 = new Friend();
-        friend3.setUser(friend);
-        friend3.setFriend(user4);
-        friend3.setStatus(FriendStatus.ACCEPTED);
-
-        List<Friend> user1Friends = List.of(friend1);
-        List<Friend> user2Friends = List.of(friend2, friend3);
+        Friend friend = new Friend();
+        friend.setFriend(friendUser);
+        friend.setUser(new User()); // dummy owner user
 
         when(friendRepository.findByStatusAndUserId(FriendStatus.ACCEPTED, 1L))
-                .thenReturn(user1Friends);
+                .thenReturn(List.of(friend));
+
+        UserShortDto friendDto = new UserShortDto(2L, "Friend", "User", null);
+        when(modelMapper.map(friendUser, UserShortDto.class)).thenReturn(friendDto);
+
+        User foaf1 = new User();
+        foaf1.setId(3L);
+        foaf1.setFirstName("FriendOf");
+        foaf1.setLastName("Friend1");
+
+        User foaf2 = new User();
+        foaf2.setId(4L);
+        foaf2.setFirstName("FriendOf");
+        foaf2.setLastName("Friend2");
+
+        Friend friendOfFriend1 = new Friend();
+        friendOfFriend1.setFriend(foaf1);
+        friendOfFriend1.setUser(new User());
+
+        Friend friendOfFriend2 = new Friend();
+        friendOfFriend2.setFriend(foaf2);
+        friendOfFriend2.setUser(new User());
+
         when(friendRepository.findByStatusAndUserId(FriendStatus.ACCEPTED, 2L))
-                .thenReturn(user2Friends);
+                .thenReturn(List.of(friendOfFriend1, friendOfFriend2));
 
-        List<User> recommendedFriends = friendService.getRecommendedFriends(1L);
+        UserShortDto foafDto1 = new UserShortDto(3L, "FriendOf", "Friend1", null);
+        UserShortDto foafDto2 = new UserShortDto(4L, "FriendOf", "Friend2", null);
 
-        assertEquals(2, recommendedFriends.size());
-        assertTrue(recommendedFriends.contains(user3));
-        assertTrue(recommendedFriends.contains(user4));
+        when(modelMapper.map(foaf1, UserShortDto.class)).thenReturn(foafDto1);
+        when(modelMapper.map(foaf2, UserShortDto.class)).thenReturn(foafDto2);
+
+        List<UserShortDto> result = friendService.getRecommendedFriends(1L);
+
+        assertEquals(2, result.size());
+        assertTrue(result.contains(foafDto1));
+        assertTrue(result.contains(foafDto2));
     }
-
 }
