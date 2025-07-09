@@ -10,9 +10,13 @@ import com.facebook.model.User;
 import com.facebook.repository.MessageRepository;
 import com.facebook.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -58,6 +62,21 @@ public class MessageService {
         Message updated = messageRepository.save(message);
 
         return mapToResponse(updated);
+    }
+
+    public Page<MessageResponse> getMessagesWithFriend(Long userId, Long friendId, int page, int size) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        User friend = userRepository.findById(friendId)
+                .orElseThrow(() -> new NotFoundException("Friend not found"));
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Message> messagesPage = messageRepository.findAllBySenderIdOrReceiverIdOrderByCreatedDateDesc(
+                user.getId(), friend.getId(), pageable
+        );
+
+        return messagesPage.map(this::mapToResponse);
     }
 
     public MessageResponse read(long id) {

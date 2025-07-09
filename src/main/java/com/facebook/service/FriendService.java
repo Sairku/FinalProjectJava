@@ -47,6 +47,13 @@ public class FriendService {
                 .toList();
     }
 
+    public List<UserShortDto> getAllUsersWhomSentRequest(Long userId) {
+        return friendRepository.findByStatusAndFriendId(FriendStatus.PENDING, userId)
+                .stream()
+                .map(friend -> modelMapper.map(friend.getFriend(), UserShortDto.class))
+                .toList();
+    }
+
     public List<UserShortDto> getRecommendedFriends(Long userId) {
         List<UserShortDto> currentUserFriends = getAllFriendUsers(userId);
 
@@ -116,7 +123,14 @@ public class FriendService {
         if (status.equals(FriendStatus.ACCEPTED)) {
             friendRequest.get().setStatus(FriendStatus.ACCEPTED);
             friendRepository.save(friendRequest.get());
-            friendRepository.save(new Friend(FriendStatus.ACCEPTED, friend, user, null));
+
+            Optional<Friend> friends = friendRepository.findByUserIdAndFriendId(friendId, userId);
+            if (friends.isEmpty()) {
+                friendRepository.save(new Friend(FriendStatus.ACCEPTED, friend, user, null));
+            } else {
+                friends.get().setStatus(FriendStatus.ACCEPTED);
+                friendRepository.save(friends.get());
+            }
         } else if (status == FriendStatus.DECLINED) {
             friendRepository.delete(friendRequest.get());
         }

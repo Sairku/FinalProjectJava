@@ -300,6 +300,43 @@ public class FriendController {
     }
 
     @Operation(
+            summary = "Get friend requests sent by the user",
+            description = "Get all users to whom the user has sent friend requests",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Friend requests sent by the user retrieved successfully",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(type = "array", implementation = UserShortDto.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "No friend requests sent by the user found",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = ErrorResponseWrapper.class
+                                    )
+                            )
+                    )
+            }
+    )
+    @GetMapping("/get-submissions")
+    public ResponseEntity<?> getSubmissions(@Parameter(hidden = true)
+                                            @CurrentUser UserAuthDto currentUser) {
+        Long userId = currentUser.getId();
+
+        return ResponseHandler.generateResponse(
+                HttpStatus.OK,
+                false,
+                "Friend requests sent by the user retrieved successfully",
+                friendService.getAllUsersWhomSentRequest(userId)
+        );
+    }
+
+    @Operation(
             summary = "Get recommended friends",
             description = "Get a list of recommended friends for the user",
             responses = {

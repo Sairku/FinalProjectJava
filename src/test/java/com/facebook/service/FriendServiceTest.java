@@ -97,6 +97,22 @@ public class FriendServiceTest {
     }
 
     @Test
+    void testGetAllUsersWhomSentRequest() {
+        UserShortDto notYetFriendDto = new UserShortDto();
+        notYetFriendDto.setId(notYetFriend.getId());
+        notYetFriendDto.setFirstName(notYetFriend.getFirstName());
+
+        when(friendRepository.findByStatusAndFriendId(FriendStatus.PENDING, 1L))
+                .thenReturn(List.of(notYetFriendObject));
+        when(modelMapper.map(notYetFriend, UserShortDto.class)).thenReturn(notYetFriendDto);
+
+        List<UserShortDto> result = friendService.getAllUsersWhomSentRequest(1L);
+
+        assertEquals(1, result.size());
+        assertEquals(notYetFriendDto, result.getFirst());
+    }
+
+    @Test
     void testAddFriendRequest_OK() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(userRepository.findById(3L)).thenReturn(Optional.of(notYetFriend));

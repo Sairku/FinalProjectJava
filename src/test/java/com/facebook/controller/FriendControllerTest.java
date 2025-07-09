@@ -170,6 +170,18 @@ public class FriendControllerTest {
     }
 
     @Test
+    void getSubmissions_shouldReturnRequestList() throws Exception {
+        List<UserShortDto> requests = Arrays.asList(testFriend);
+        when(friendService.getAllUsersWhomSentRequest(anyLong())).thenReturn(requests);
+
+        mockMvc.perform(get("/api/friends/get-submissions"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].id").value(friendId))
+                .andExpect(jsonPath("$.data[0].firstName").value("Test Friend"));
+
+    }
+
+    @Test
     void getRecommendedFriends_shouldReturnRecommendedList() throws Exception {
         List<UserShortDto> recommended = Arrays.asList(testFriend);
         when(friendService.getRecommendedFriends(anyLong())).thenReturn(recommended);
