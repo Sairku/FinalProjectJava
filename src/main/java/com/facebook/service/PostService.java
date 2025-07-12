@@ -56,7 +56,7 @@ public class PostService {
         }
 
 
-        UserShortDto userDTO = new UserShortDto(user.getId(), user.getFirstName(), user.getLastName());
+        UserShortDto userDTO = new UserShortDto(user.getId(), user.getFirstName(), user.getLastName(), user.getAvatarUrl());
         List<String> images = savedPost.getImages().stream()
                 .map(PostImage::getUrl)
                 .toList();
@@ -91,7 +91,7 @@ public class PostService {
         Post updatedPost = postRepository.save(post);
 
         User user = updatedPost.getUser();
-        UserShortDto userDTO = new UserShortDto(user.getId(), user.getFirstName(), user.getLastName());
+        UserShortDto userDTO = new UserShortDto(user.getId(), user.getFirstName(), user.getLastName(), user.getAvatarUrl());
         List<String> images = updatedPost.getImages().stream()
                 .map(PostImage::getUrl)
                 .toList();
@@ -198,7 +198,7 @@ public class PostService {
 
                     return new PostResponseDto(
                             post.getId(),
-                            new UserShortDto(user.getId(), user.getFirstName(), user.getLastName()),
+                            new UserShortDto(user.getId(), user.getFirstName(), user.getLastName(), user.getAvatarUrl()),
                             post.getText(),
                             images,
                             post.getCreatedDate(),
@@ -216,9 +216,9 @@ public class PostService {
 
         List<Post> posts = new ArrayList<>(postRepository.findAllByUserId(userId).orElse(List.of()));
 
-        List<User> friends = friendService.getAllFriendUsers(userId);
+        List<UserShortDto> friends = friendService.getAllFriendUsers(userId);
 
-        for (User friend : friends) {
+        for (UserShortDto friend : friends) {
             List<Post> friendPosts = new ArrayList<>(postRepository.findAllByUserId(friend.getId()).orElse(List.of()));
             posts.addAll(friendPosts);
         }
@@ -232,7 +232,7 @@ public class PostService {
 
                     return new PostResponseDto(
                             post.getId(),
-                            new UserShortDto(user.getId(), user.getFirstName(), user.getLastName()),
+                            new UserShortDto(user.getId(), user.getFirstName(), user.getLastName(), user.getAvatarUrl()),
                             post.getText(),
                             images,
                             post.getCreatedDate(),

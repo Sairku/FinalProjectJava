@@ -13,5 +13,6 @@ public class GroupResponse {
     private String description;
     private String imageUrl;
     private String color;
+    private boolean isMember;
     private boolean isPrivate;
 }

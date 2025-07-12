@@ -10,9 +10,13 @@ import com.facebook.model.User;
 import com.facebook.repository.MessageRepository;
 import com.facebook.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -60,7 +64,20 @@ public class MessageService {
         return mapToResponse(updated);
     }
 
+    public Page<MessageResponse> getMessagesWithFriend(Long userId, Long friendId, int page, int size) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
+        User friend = userRepository.findById(friendId)
+                .orElseThrow(() -> new NotFoundException("Friend not found"));
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Message> messagesPage = messageRepository.findAllBySenderIdOrReceiverIdOrderByCreatedDateDesc(
+                user.getId(), friend.getId(), pageable
+        );
+
+        return messagesPage.map(this::mapToResponse);
+    }
 
     public MessageResponse read(long id) {
         Message message = messageRepository.findById(id)
@@ -85,16 +102,21 @@ public class MessageService {
     }
 
     private MessageResponse mapToResponse(Message message) {
+        User sender = message.getSender();
+        User receiver = message.getReceiver();
+
         UserShortDto senderDto = new UserShortDto(
-                message.getSender().getId(),
-                message.getSender().getFirstName(),
-                message.getSender().getLastName()
+                sender.getId(),
+                sender.getFirstName(),
+                sender.getLastName(),
+                sender.getAvatarUrl()
         );
 
         UserShortDto receiverDto = new UserShortDto(
-                message.getReceiver().getId(),
-                message.getReceiver().getFirstName(),
-                message.getReceiver().getLastName()
+                receiver.getId(),
+                receiver.getFirstName(),
+                receiver.getLastName(),
+                receiver.getAvatarUrl()
         );
 
         return new MessageResponse(

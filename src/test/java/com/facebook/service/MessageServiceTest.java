@@ -3,7 +3,6 @@ package com.facebook.service;
 import com.facebook.dto.MessageCreateRequest;
 import com.facebook.dto.MessageResponse;
 import com.facebook.dto.MessageUpdateRequest;
-import com.facebook.dto.UserShortDto;
 import com.facebook.exception.NotFoundException;
 import com.facebook.model.Message;
 import com.facebook.model.User;
@@ -15,8 +14,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -24,7 +27,6 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class MessageServiceTest {
-
     @Mock(lenient = true) // дозволяє не викликати помилку для непотрібних стубів
     private MessageRepository messageRepository;
 
@@ -174,5 +176,43 @@ public class MessageServiceTest {
         when(messageRepository.findById(999L)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> messageService.delete(999L, 1L));
+    }
+
+    @Test
+    void getMessagesWithFriend_shouldReturnPageOfMessageResponses() {
+        int page = 0;
+        int size = 2;
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(sender));
+        when(userRepository.findById(2L)).thenReturn(Optional.of(receiver));
+
+        Message secondMessage = new Message();
+        secondMessage.setId(11L);
+        secondMessage.setSender(receiver);
+        secondMessage.setReceiver(sender);
+        secondMessage.setText("Hi back");
+        secondMessage.setRead(true);
+        secondMessage.setCreatedDate(LocalDateTime.now().minusMinutes(1));
+
+        Page<Message> messagesPage = new PageImpl<>(List.of(message, secondMessage));
+
+        when(messageRepository.findAllBySenderIdOrReceiverIdOrderByCreatedDateDesc(1L, 2L, PageRequest.of(page, size)))
+                .thenReturn(messagesPage);
+
+        Page<MessageResponse> responsePage = messageService.getMessagesWithFriend(1L, 2L, page, size);
+
+        assertNotNull(responsePage);
+        assertEquals(2, responsePage.getTotalElements());
+        assertEquals("Hello", responsePage.getContent().get(0).getText());
+        assertEquals("Hi back", responsePage.getContent().get(1).getText());
+
+        verify(messageRepository).findAllBySenderIdOrReceiverIdOrderByCreatedDateDesc(1L, 2L, PageRequest.of(page, size));
+    }
+
+    @Test
+    void getMessagesWithFriend_shouldThrowNotFoundException() {
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> messageService.getMessagesWithFriend(1L, 2L, 0, 20));
     }
 }

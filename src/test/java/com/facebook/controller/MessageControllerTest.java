@@ -14,6 +14,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -23,6 +25,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.setup.StandaloneMockMvcBuilder;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -31,7 +34,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @ExtendWith(MockitoExtension.class)
 public class MessageControllerTest {
-
     @Mock
     private SecurityContext securityContext;
 
@@ -122,7 +124,6 @@ public class MessageControllerTest {
 
     }
 
-
     @Test
     void markRead_shouldReturn200() throws Exception {
         mockMvc = buildMockMvc(false);
@@ -143,5 +144,38 @@ public class MessageControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Message deleted"))
                 .andExpect(jsonPath("$.error").value(false));
+    }
+
+    @Test
+    void getMessagesWithFriend_shouldReturn200WithMessages() throws Exception {
+        mockMvc = buildMockMvc(true);
+
+        MessageResponse message1 = new MessageResponse();
+        message1.setId(101L);
+        message1.setText("Hello");
+
+        MessageResponse message2 = new MessageResponse();
+        message2.setId(102L);
+        message2.setText("Hi there");
+
+        List<MessageResponse> messageList = List.of(message1, message2);
+
+        Page<MessageResponse> messagePage = new PageImpl<>(messageList);
+
+        when(messageService.getMessagesWithFriend(1L, 2L, 0, 20)).thenReturn(messagePage);
+
+        mockMvc.perform(get("/api/messages/{friendId}", 2L)
+                        .param("page", "0")
+                        .param("size", "20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Messages retrieved"))
+                .andExpect(jsonPath("$.error").value(false))
+                .andExpect(jsonPath("$.data.content.length()").value(2))
+                .andExpect(jsonPath("$.data.content[0].id").value(101))
+                .andExpect(jsonPath("$.data.content[0].text").value("Hello"))
+                .andExpect(jsonPath("$.data.content[1].id").value(102))
+                .andExpect(jsonPath("$.data.content[1].text").value("Hi there"));
+
+        verify(messageService).getMessagesWithFriend(1L, 2L, 0, 20);
     }
 }

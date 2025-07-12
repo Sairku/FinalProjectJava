@@ -17,8 +17,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import java.util.List;
 import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -175,5 +180,61 @@ class GroupServiceTest {
         when(groupRepository.findById(999L)).thenReturn(Optional.empty());
 
         assertThrows(RuntimeException.class, () -> groupService.update(999L, updateRequest, 1L));
+    }
+
+    @Test
+    void getGroupMembers_shouldReturnList() {
+        GroupMember member = new GroupMember();
+        member.setGroup(group);
+        member.setUser(guest);
+
+        when(groupRepository.findById(groupId)).thenReturn(Optional.of(group));
+        when(groupMemberRepository.findByGroupId(groupId)).thenReturn(Optional.of(List.of(member)));
+
+        List<UserShortDto> result = groupService.getGroupMembers(groupId);
+
+        assertEquals(1, result.size());
+        assertEquals(guest.getId(), result.get(0).getId());
+        assertEquals(guest.getFirstName(), result.get(0).getFirstName());
+        verify(groupRepository).findById(groupId);
+        verify(groupMemberRepository).findByGroupId(groupId);
+    }
+
+    @Test
+    void getGroupMembers_shouldThrowIfGroupNotFound() {
+        when(groupRepository.findById(groupId)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> groupService.getGroupMembers(groupId));
+    }
+
+    @Test
+    void getGroupMembers_shouldReturnEmptyListIfNoMembersFound() {
+        when(groupRepository.findById(groupId)).thenReturn(Optional.of(group));
+        when(groupMemberRepository.findByGroupId(groupId)).thenReturn(Optional.empty());
+
+        List<UserShortDto> result = groupService.getGroupMembers(groupId);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void getAll_shouldReturnPagedGroupsWithMembershipInfo() {
+        Group group2 = new Group();
+        group2.setId(101L);
+        group2.setName("Another Group");
+        group2.setPrivate(false);
+
+        Page<Group> groupPage = new PageImpl<>(List.of(group, group2));
+        when(groupRepository.findAll(any(Pageable.class))).thenReturn(groupPage);
+
+        when(groupMemberRepository.findByGroupIdAndUserId(group.getId(), guestId)).thenReturn(Optional.of(new GroupMember()));
+        when(groupMemberRepository.findByGroupIdAndUserId(group2.getId(), guestId)).thenReturn(Optional.empty());
+
+        Page<GroupResponse> result = groupService.getAll(0, 10, guestId);
+
+        assertEquals(2, result.getContent().size());
+        assertTrue(result.getContent().get(0).isMember());
+        assertFalse(result.getContent().get(1).isMember());
+        verify(groupRepository).findAll(any(Pageable.class));
     }
 }

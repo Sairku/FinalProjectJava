@@ -94,7 +94,7 @@ public class PostControllerTest {
         PostResponseDto response = new PostResponseDto();
         response.setText(request.getText());
         response.setImages(request.getImages());
-        response.setUser(new UserShortDto(userId, "John", "Doe"));
+        response.setUser(new UserShortDto(userId, "John", "Doe", null));
 
         // замість @CurrentUser — передаємо явно
         Mockito.when(postService.createPost(eq(userId), any(PostCreateRequestDto.class))).thenReturn(response);
@@ -198,7 +198,7 @@ public class PostControllerTest {
         CommentResponseDto commentResponse = new CommentResponseDto();
         commentResponse.setId(1L);
         commentResponse.setText("Great post!");
-        commentResponse.setUser(new UserShortDto(userId, "John", "Doe"));
+        commentResponse.setUser(new UserShortDto(userId, "John", "Doe", null));
 
         when(commentService.addComment(postId, userId, "Great post!")).thenReturn(commentResponse);
 
@@ -217,7 +217,7 @@ public class PostControllerTest {
         Long postId = 1L;
 
         List<CommentResponseDto> comments = List.of(
-                new CommentResponseDto(1L, new UserShortDto(userId, "John", "Doe"), "Nice!", null)
+                new CommentResponseDto(1L, new UserShortDto(userId, "John", "Doe", null), "Nice!", null)
         );
 
         when(commentService.getPostComments(postId)).thenReturn(comments);
@@ -239,7 +239,7 @@ public class PostControllerTest {
         post.setId(1L);
         post.setText("Test post");
         post.setCreatedDate(LocalDateTime.now());
-        post.setUser(new UserShortDto(userId, "John", "Doe"));
+        post.setUser(new UserShortDto(userId, "John", "Doe", null));
         posts.add(post);
 
         when(postService.getUserAndFriendsPosts(userId)).thenReturn(posts);

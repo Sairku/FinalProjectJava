@@ -15,6 +15,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -24,12 +26,14 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.test.web.servlet.setup.StandaloneMockMvcBuilder;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -204,5 +208,52 @@ public class GroupControllerTest {
                         .content(objectMapper.writeValueAsString(groupMemberRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message", containsString("was rejected to join to the group")));
+    }
+
+    @Test
+    void getAllGroups_shouldReturnPagedGroups() throws Exception {
+        mockMvc = buildMockMvc(true);
+
+        GroupResponse group1 = new GroupResponse();
+        group1.setId(1L);
+        group1.setName("Group 1");
+        group1.setMember(true);
+
+        GroupResponse group2 = new GroupResponse();
+        group2.setId(2L);
+        group2.setName("Group 2");
+        group2.setMember(false);
+
+        Page<GroupResponse> groupPage = new PageImpl<>(new ArrayList<>(List.of(group1, group2)));
+
+        when(groupService.getAll(0, 10, userId)).thenReturn(groupPage);
+
+        mockMvc.perform(get("/api/groups?page=0&size=10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Groups retrieved successfully"))
+                .andExpect(jsonPath("$.data.content[0].name").value("Group 1"))
+                .andExpect(jsonPath("$.data.content[1].name").value("Group 2"));
+    }
+
+    @Test
+    void getGroupMembers_shouldReturnListOfMembers() throws Exception {
+        mockMvc = buildMockMvc(false);
+
+        UserShortDto member1 = new UserShortDto();
+        member1.setId(10L);
+        member1.setFirstName("Alice");
+
+        UserShortDto member2 = new UserShortDto();
+        member2.setId(11L);
+        member2.setFirstName("Bob");
+
+        when(groupService.getGroupMembers(groupId)).thenReturn(List.of(member1, member2));
+
+        mockMvc.perform(get("/api/groups/" + groupId + "/members"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Group members retrieved successfully"))
+                .andExpect(jsonPath("$.data[0].firstName").value("Alice"))
+                .andExpect(jsonPath("$.data[1].firstName").value("Bob"));
     }
 }

@@ -14,6 +14,7 @@ public class UserShortDto {
     private Long id;
     private String firstName;
     private String lastName;
+    private String avatarUrl;
 
     @Override
     public boolean equals(Object obj) {
