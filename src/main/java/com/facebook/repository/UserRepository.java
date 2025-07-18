@@ -14,4 +14,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findAllByIdNot(Long excludedUserId);
     List<User> findTop40ByIdNot(Long excludedUserId);
     List<User> findTop40ByIdNotOrderByCreatedDateDesc(Long excludedUserId);
+    Optional<List<User>> findAllByFirstNameAndLastName(String firstName, String lastName);
 }

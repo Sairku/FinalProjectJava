@@ -283,4 +283,21 @@ public class UserController {
                 posts
         );
     }
+
+    @GetMapping("/{firstName}/{lastName}")
+    public ResponseEntity<?> getAllUsersByFirstNameAndLastName(
+            @PathVariable String firstName,
+            @PathVariable String lastName
+    ) {
+        List<UserShortDto> maybeUsers = userService.findAllUsersByFirstNameAndLastName(firstName, lastName);
+        String responseMessage = !maybeUsers.isEmpty() ?
+                String.format("The search by %s %s yielded results",firstName,lastName) :
+                "The search was unsuccessful";
+        return ResponseHandler.generateResponse(
+                HttpStatus.OK,
+                false,
+                responseMessage,
+                maybeUsers
+        );
+    }
 }

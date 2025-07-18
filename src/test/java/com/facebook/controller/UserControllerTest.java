@@ -25,6 +25,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static org.mockito.Mockito.*;
@@ -154,5 +155,58 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.data.content[1].firstName").value("Bob"));
 
         verify(userService, times(1)).getAllUsersExceptCurrent(userId, 0, 10);
+    }
+
+    @Test
+    void getAllUsersByFirstNameAndLastName_returnsUsersAndOkMessage() throws Exception {
+        String firstName = "John";
+        String lastName = "Doe";
+
+        UserShortDto dto = new UserShortDto();
+        dto.setId(1L);
+        dto.setFirstName(firstName);
+        dto.setLastName(lastName);
+
+        List<UserShortDto> resultList = List.of(dto);
+
+        when(userService.findAllUsersByFirstNameAndLastName(firstName, lastName))
+                .thenReturn(resultList);
+
+        mockMvc.perform(get("/api/users/" + firstName + "/" + lastName))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.error").value(false))
+                .andExpect(jsonPath("$.message").value("The search by John Doe yielded results"))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value(1))
+                .andExpect(jsonPath("$.data[0].firstName").value("John"))
+                .andExpect(jsonPath("$.data[0].lastName").value("Doe"));
+
+        verify(userService, times(1)).findAllUsersByFirstNameAndLastName(firstName, lastName);
+        lenient().when(securityContext.getAuthentication()).thenReturn(authentication);
+        lenient().when(authentication.getPrincipal()).thenReturn(currentUserData);
+    }
+
+    @Test
+    void getAllUsersByFirstNameAndLastName_returnsEmptyListAndUnsuccessfulMessage() throws Exception {
+        String firstName = "Wrong";
+        String lastName = "Name";
+
+        // Порожній список, бо користувачів не знайдено
+        List<UserShortDto> emptyList = List.of();
+
+        when(userService.findAllUsersByFirstNameAndLastName(firstName, lastName))
+                .thenReturn(emptyList);
+
+        mockMvc.perform(get("/api/users/" + firstName + "/" + lastName))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.error").value(false))
+                .andExpect(jsonPath("$.message").value("The search was unsuccessful"))
+                .andExpect(jsonPath("$.data.length()").value(0));
+
+        verify(userService, times(1)).findAllUsersByFirstNameAndLastName(firstName, lastName);
+
+        // Якщо у тебе потрібні lenient мокування для securityContext
+        lenient().when(securityContext.getAuthentication()).thenReturn(authentication);
+        lenient().when(authentication.getPrincipal()).thenReturn(currentUserData);
     }
 }

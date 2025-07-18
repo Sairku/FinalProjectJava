@@ -13,9 +13,9 @@ import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -149,5 +149,10 @@ public class UserService {
 
     public User findUserById(long userId) {
         return userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Not found user with ID: " + userId));
+    }
+
+    public List<UserShortDto> findAllUsersByFirstNameAndLastName(String firstName, String lastName) {
+        List<User> maybeUsers =  userRepository.findAllByFirstNameAndLastName(firstName,lastName).orElse(new ArrayList<>());
+        return maybeUsers.stream().map(user -> modelMapper.map(user, UserShortDto.class)).toList();
     }
 }

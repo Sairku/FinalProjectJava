@@ -10,11 +10,13 @@ import com.facebook.exception.NotFoundException;
 import com.facebook.model.User;
 import com.facebook.repository.FriendRepository;
 import com.facebook.repository.UserRepository;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
@@ -285,5 +287,45 @@ public class UserServiceTest {
         verify(userRepository, times(1)).findAllByIdNotOrderByCreatedDateDesc(currentUserId, pageable);
         verify(modelMapper, times(1)).map(user1, UserShortDto.class);
         verify(modelMapper, times(1)).map(user2, UserShortDto.class);
+    }
+
+    @Test
+    void testFindAllUsersByFirstNameAndLastName_returnsMappedDtoList() {
+        String firstName = "First Name";
+        String lastName = "Last Name";
+
+        List<User> users = List.of(user);
+        UserShortDto userShortDto = new UserShortDto();
+        userShortDto.setId(user.getId());
+        userShortDto.setFirstName(user.getFirstName());
+        userShortDto.setLastName(user.getLastName());
+
+        Mockito.when(userRepository.findAllByFirstNameAndLastName(firstName, lastName))
+                .thenReturn(Optional.of(users));
+
+        Mockito.when(modelMapper.map(user, UserShortDto.class))
+                .thenReturn(userShortDto);
+
+        List<UserShortDto> result = userService.findAllUsersByFirstNameAndLastName(firstName, lastName);
+
+        Assertions.assertEquals(1, result.size());
+        Assertions.assertEquals(userShortDto, result.get(0));
+        Mockito.verify(userRepository).findAllByFirstNameAndLastName(firstName, lastName);
+        Mockito.verify(modelMapper).map(user, UserShortDto.class);
+    }
+
+    @Test
+    void testFindAllUsersByFirstNameAndLastName_returnsEmptyList_whenNoUsersFound() {
+        String firstName = "Nonexistent";
+        String lastName = "User";
+
+        Mockito.when(userRepository.findAllByFirstNameAndLastName(firstName, lastName))
+                .thenReturn(Optional.empty());
+
+        List<UserShortDto> result = userService.findAllUsersByFirstNameAndLastName(firstName, lastName);
+
+        Assertions.assertTrue(result.isEmpty());
+        Mockito.verify(userRepository).findAllByFirstNameAndLastName(firstName, lastName);
+        Mockito.verifyNoInteractions(modelMapper);
     }
 }
