@@ -151,8 +151,19 @@ public class UserService {
         return userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Not found user with ID: " + userId));
     }
 
-    public List<UserShortDto> findAllUsersByFirstNameAndLastName(String firstName, String lastName) {
-        List<User> maybeUsers =  userRepository.findAllByFirstNameAndLastName(firstName,lastName).orElse(new ArrayList<>());
-        return maybeUsers.stream().map(user -> modelMapper.map(user, UserShortDto.class)).toList();
+    public List<UserShortDto> searchUsersByFullName(String fullName) {
+        String[] words = fullName.trim().toLowerCase().split("\\s+");
+        List<User> users;
+
+        if (words.length == 1) {
+            users = userRepository.searchByFullNamePrefix(words[0]).orElse(new ArrayList<>());
+        } else if (words.length == 2) {
+            users = userRepository.searchByTwoWords(words[0], words[1]).orElse(new ArrayList<>());
+        } else {
+            users = userRepository.searchByFullNameContains(fullName).orElse(new ArrayList<>());
+        }
+        return users.stream()
+                .map(user -> modelMapper.map(user, UserShortDto.class))
+                .toList();
     }
 }

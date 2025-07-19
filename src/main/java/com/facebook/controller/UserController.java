@@ -284,15 +284,14 @@ public class UserController {
         );
     }
 
-    @GetMapping("/{firstName}/{lastName}")
-    public ResponseEntity<?> getAllUsersByFirstNameAndLastName(
-            @PathVariable String firstName,
-            @PathVariable String lastName
-    ) {
-        List<UserShortDto> maybeUsers = userService.findAllUsersByFirstNameAndLastName(firstName, lastName);
-        String responseMessage = !maybeUsers.isEmpty() ?
-                String.format("The search by %s %s yielded results",firstName,lastName) :
-                "The search was unsuccessful";
+    @GetMapping("/search")
+    public ResponseEntity<?> searchUsersByFullName(@RequestParam String query) {
+        List<UserShortDto> maybeUsers = userService.searchUsersByFullName(query);
+
+        String responseMessage = !maybeUsers.isEmpty()
+                ? String.format("The search by \"%s\" yielded results", query)
+                : String.format("No users found for \"%s\"", query);
+
         return ResponseHandler.generateResponse(
                 HttpStatus.OK,
                 false,

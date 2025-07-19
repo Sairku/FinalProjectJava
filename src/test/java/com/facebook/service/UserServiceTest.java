@@ -290,9 +290,8 @@ public class UserServiceTest {
     }
 
     @Test
-    void testFindAllUsersByFirstNameAndLastName_returnsMappedDtoList() {
-        String firstName = "First Name";
-        String lastName = "Last Name";
+    void searchUsersByFullName_returnsMappedDtoList_singleWord() {
+        String fullName = "First";
 
         List<User> users = List.of(user);
         UserShortDto userShortDto = new UserShortDto();
@@ -300,32 +299,97 @@ public class UserServiceTest {
         userShortDto.setFirstName(user.getFirstName());
         userShortDto.setLastName(user.getLastName());
 
-        Mockito.when(userRepository.findAllByFirstNameAndLastName(firstName, lastName))
+        Mockito.when(userRepository.searchByFullNamePrefix("first"))
                 .thenReturn(Optional.of(users));
-
         Mockito.when(modelMapper.map(user, UserShortDto.class))
                 .thenReturn(userShortDto);
 
-        List<UserShortDto> result = userService.findAllUsersByFirstNameAndLastName(firstName, lastName);
+        List<UserShortDto> result = userService.searchUsersByFullName(fullName);
 
         Assertions.assertEquals(1, result.size());
         Assertions.assertEquals(userShortDto, result.get(0));
-        Mockito.verify(userRepository).findAllByFirstNameAndLastName(firstName, lastName);
+
+        Mockito.verify(userRepository).searchByFullNamePrefix("first");
         Mockito.verify(modelMapper).map(user, UserShortDto.class);
     }
 
     @Test
-    void testFindAllUsersByFirstNameAndLastName_returnsEmptyList_whenNoUsersFound() {
-        String firstName = "Nonexistent";
-        String lastName = "User";
+    void searchUsersByFullName_returnsMappedDtoList_twoWords() {
+        String fullName = "First Last";
 
-        Mockito.when(userRepository.findAllByFirstNameAndLastName(firstName, lastName))
-                .thenReturn(Optional.empty());
+        List<User> users = List.of(user);
+        UserShortDto userShortDto = new UserShortDto();
+        userShortDto.setId(user.getId());
+        userShortDto.setFirstName(user.getFirstName());
+        userShortDto.setLastName(user.getLastName());
 
-        List<UserShortDto> result = userService.findAllUsersByFirstNameAndLastName(firstName, lastName);
+        Mockito.when(userRepository.searchByTwoWords("first", "last"))
+                .thenReturn(Optional.of(users));
+        Mockito.when(modelMapper.map(user, UserShortDto.class))
+                .thenReturn(userShortDto);
+
+        List<UserShortDto> result = userService.searchUsersByFullName(fullName);
+
+        Assertions.assertEquals(1, result.size());
+        Assertions.assertEquals(userShortDto, result.get(0));
+
+        Mockito.verify(userRepository).searchByTwoWords("first", "last");
+        Mockito.verify(modelMapper).map(user, UserShortDto.class);
+    }
+
+    @Test
+    void searchUsersByFullName_returnsMappedDtoList_moreThanTwoWords() {
+        String fullName = "First Middle Last";
+
+        List<User> users = List.of(user);
+        UserShortDto userShortDto = new UserShortDto();
+        userShortDto.setId(user.getId());
+        userShortDto.setFirstName(user.getFirstName());
+        userShortDto.setLastName(user.getLastName());
+
+        Mockito.when(userRepository.searchByFullNameContains(fullName))
+                .thenReturn(Optional.of(users));
+        Mockito.when(modelMapper.map(user, UserShortDto.class))
+                .thenReturn(userShortDto);
+
+        List<UserShortDto> result = userService.searchUsersByFullName(fullName);
+
+        Assertions.assertEquals(1, result.size());
+        Assertions.assertEquals(userShortDto, result.get(0));
+
+        Mockito.verify(userRepository).searchByFullNameContains(fullName);
+        Mockito.verify(modelMapper).map(user, UserShortDto.class);
+    }
+
+    @Test
+    void searchUsersByFullName_returnsEmptyList_whenNoUsersFound() {
+        String fullName = "Nonexistent User";
+
+        String[] words = fullName.trim().toLowerCase().split("\\s+");
+        if (words.length == 1) {
+            Mockito.when(userRepository.searchByFullNamePrefix(words[0]))
+                    .thenReturn(Optional.empty());
+        } else if (words.length == 2) {
+            Mockito.when(userRepository.searchByTwoWords(words[0], words[1]))
+                    .thenReturn(Optional.empty());
+        } else {
+            Mockito.when(userRepository.searchByFullNameContains(fullName))
+                    .thenReturn(Optional.empty());
+        }
+
+        List<UserShortDto> result = userService.searchUsersByFullName(fullName);
 
         Assertions.assertTrue(result.isEmpty());
-        Mockito.verify(userRepository).findAllByFirstNameAndLastName(firstName, lastName);
+
+        if (words.length == 1) {
+            Mockito.verify(userRepository).searchByFullNamePrefix(words[0]);
+        } else if (words.length == 2) {
+            Mockito.verify(userRepository).searchByTwoWords(words[0], words[1]);
+        } else {
+            Mockito.verify(userRepository).searchByFullNameContains(fullName);
+        }
         Mockito.verifyNoInteractions(modelMapper);
     }
+
+
 }
