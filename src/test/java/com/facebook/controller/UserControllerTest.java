@@ -155,4 +155,53 @@ public class UserControllerTest {
 
         verify(userService, times(1)).getAllUsersExceptCurrent(userId, 0, 10);
     }
+
+    @Test
+    void searchUsersByFullName_returnsUsersAndOkMessage() throws Exception {
+        String query = "John Doe";
+
+        UserShortDto dto = new UserShortDto();
+        dto.setId(1L);
+        dto.setFirstName("John");
+        dto.setLastName("Doe");
+
+        List<UserShortDto> resultList = List.of(dto);
+
+        when(userService.searchUsersByFullName(query)).thenReturn(resultList);
+
+        mockMvc.perform(get("/api/users/search")
+                        .param("query", query))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.error").value(false))
+                .andExpect(jsonPath("$.message").value("The search by \"John Doe\" yielded results"))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value(1))
+                .andExpect(jsonPath("$.data[0].firstName").value("John"))
+                .andExpect(jsonPath("$.data[0].lastName").value("Doe"));
+
+        verify(userService, times(1)).searchUsersByFullName(query);
+        lenient().when(securityContext.getAuthentication()).thenReturn(authentication);
+        lenient().when(authentication.getPrincipal()).thenReturn(currentUserData);
+    }
+
+    @Test
+    void searchUsersByFullName_returnsEmptyListAndUnsuccessfulMessage() throws Exception {
+        String query = "Wrong Name";
+
+        List<UserShortDto> emptyList = List.of();
+
+        when(userService.searchUsersByFullName(query)).thenReturn(emptyList);
+
+        mockMvc.perform(get("/api/users/search")
+                        .param("query", query))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.error").value(false))
+                .andExpect(jsonPath("$.message").value("No users found for \"Wrong Name\""))
+                .andExpect(jsonPath("$.data.length()").value(0));
+
+        verify(userService, times(1)).searchUsersByFullName(query);
+
+        lenient().when(securityContext.getAuthentication()).thenReturn(authentication);
+        lenient().when(authentication.getPrincipal()).thenReturn(currentUserData);
+    }
 }

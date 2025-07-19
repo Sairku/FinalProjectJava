@@ -283,4 +283,20 @@ public class UserController {
                 posts
         );
     }
+
+    @GetMapping("/search")
+    public ResponseEntity<?> searchUsersByFullName(@RequestParam String query) {
+        List<UserShortDto> maybeUsers = userService.searchUsersByFullName(query);
+
+        String responseMessage = !maybeUsers.isEmpty()
+                ? String.format("The search by \"%s\" yielded results", query)
+                : String.format("No users found for \"%s\"", query);
+
+        return ResponseHandler.generateResponse(
+                HttpStatus.OK,
+                false,
+                responseMessage,
+                maybeUsers
+        );
+    }
 }
