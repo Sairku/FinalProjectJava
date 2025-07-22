@@ -27,7 +27,8 @@ import java.util.List;
 public class AchievementController {
     private final UserAchievementService userAchievementService;
     private final UserService userService;
-    @GetMapping("/achievements")
+
+    @GetMapping()
     public ResponseEntity<?> getUserAchievements(
             @Parameter(hidden = true) @CurrentUser UserAuthDto currentUser
     ) {

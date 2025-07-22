@@ -109,14 +109,16 @@ public class MessageService {
                 sender.getId(),
                 sender.getFirstName(),
                 sender.getLastName(),
-                sender.getAvatarUrl()
+                sender.getAvatarUrl(),
+                sender.getBirthdate()
         );
 
         UserShortDto receiverDto = new UserShortDto(
                 receiver.getId(),
                 receiver.getFirstName(),
                 receiver.getLastName(),
-                receiver.getAvatarUrl()
+                receiver.getAvatarUrl(),
+                receiver.getBirthdate()
         );
 
         return new MessageResponse(

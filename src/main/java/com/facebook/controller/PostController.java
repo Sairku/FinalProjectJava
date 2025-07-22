@@ -357,26 +357,26 @@ public class PostController {
                                     schema = @Schema(
                                             type = "object",
                                             example = """
-                                                    {
-                                                      "error": false,
-                                                      "message": "User posts retrieved successfully",
-                                                      "data": [
                                                         {
-                                                          "user": {
-                                                                "id": 1,
-                                                                "firstName": "John",
-                                                                "lastName": "Doe"
-                                                            },
-                                                            "text": "Hello World!",
-                                                            "images": ["http://example.com/image.jpg"],
-                                                            "createdDate": "2023-10-01T12:00:00Z",
-                                                            "likesCount": 10,
-                                                            "commentsCount": 5,
-                                                            "repostsCount": 2
+                                                          "error": false,
+                                                          "message": "User posts retrieved successfully",
+                                                          "data": [
+                                                            {
+                                                              "user": {
+                                                                    "id": 1,
+                                                                    "firstName": "John",
+                                                                    "lastName": "Doe"
+                                                                },
+                                                                "text": "Hello World!",
+                                                                "images": ["http://example.com/image.jpg"],
+                                                                "createdDate": "2023-10-01T12:00:00Z",
+                                                                "likesCount": 10,
+                                                                "commentsCount": 5,
+                                                                "repostsCount": 2
+                                                            }
+                                                          ]
                                                         }
-                                                      ]
-                                                    }
-                                                """)
+                                                    """)
                             )
                     )
             }
@@ -386,6 +386,68 @@ public class PostController {
             @Parameter(hidden = true) @CurrentUser UserAuthDto currentUser
     ) {
         List<PostResponseDto> posts = postService.getUserAndFriendsPosts(currentUser.getId());
+
+        return ResponseHandler.generateResponse(
+                HttpStatus.OK,
+                false,
+                "Posts retrieved successfully",
+                posts
+        );
+    }
+
+    @Operation(
+            summary = "Get all posts of user and friends (with pagination)",
+            description = "Retrieves all posts of the current user and their friends",
+            parameters = {
+                    @Parameter(name = "page", description = "Page number (default is 0)"),
+                    @Parameter(name = "size", description = "Number of users per page (default is 20)")
+            },
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Posts retrieved successfully",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            type = "object",
+                                            example = """
+                                                        {
+                                                          "error": false,
+                                                          "message": "User posts retrieved successfully",
+                                                          "data": {
+                                                            "content": [
+                                                            {
+                                                              "user": {
+                                                                    "id": 1,
+                                                                    "firstName": "John",
+                                                                    "lastName": "Doe"
+                                                                },
+                                                                "text": "Hello World!",
+                                                                "images": ["http://example.com/image.jpg"],
+                                                                "createdDate": "2023-10-01T12:00:00Z",
+                                                                "likesCount": 10,
+                                                                "commentsCount": 5,
+                                                                "repostsCount": 2
+                                                            }
+                                                          ],
+                                                            "totalElements": 1,
+                                                            "totalPages": 1,
+                                                            "size": 10,
+                                                            "number": 0
+                                                          }
+                                                        }
+                                                    """)
+                            )
+                    )
+            }
+    )
+    @GetMapping("/pagination")
+    public ResponseEntity<?> getAllPostsPagination(
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size,
+            @Parameter(hidden = true) @CurrentUser UserAuthDto currentUser
+    ) {
+        PageResponseDto<PostResponseDto> posts = postService.getUserAndFriendsPosts(currentUser.getId(), page, size);
 
         return ResponseHandler.generateResponse(
                 HttpStatus.OK,

@@ -189,24 +189,24 @@ public class UserController {
                                     schema = @Schema(
                                             type = "object",
                                             example = """
-                                                    {
-                                                      "error": false,
-                                                      "message": "Users retrieved successfully",
-                                                      "data": {
-                                                        "content": [
-                                                          {
-                                                            "id": 1,
-                                                            "firstName": "John",
-                                                            "lastName": "Doe"
+                                                        {
+                                                          "error": false,
+                                                          "message": "Users retrieved successfully",
+                                                          "data": {
+                                                            "content": [
+                                                              {
+                                                                "id": 1,
+                                                                "firstName": "John",
+                                                                "lastName": "Doe"
+                                                              }
+                                                            ],
+                                                            "totalElements": 1,
+                                                            "totalPages": 1,
+                                                            "size": 10,
+                                                            "number": 0
                                                           }
-                                                        ],
-                                                        "totalElements": 1,
-                                                        "totalPages": 1,
-                                                        "size": 10,
-                                                        "number": 0
-                                                      }
-                                                    }
-                                                """)
+                                                        }
+                                                    """)
                             )
                     )
             }
@@ -241,21 +241,21 @@ public class UserController {
                                     schema = @Schema(
                                             type = "object",
                                             example = """
-                                                    {
-                                                      "error": false,
-                                                      "message": "User posts retrieved successfully",
-                                                      "data": [
                                                         {
-                                                          "id": 1,
-                                                          "text": "Hello World!",
-                                                          "createdDate": "2023-10-01T12:00:00Z",
-                                                          "likesCount": 10,
-                                                          "commentsCount": 5,
-                                                          "repostsCount": 2
+                                                          "error": false,
+                                                          "message": "User posts retrieved successfully",
+                                                          "data": [
+                                                            {
+                                                              "id": 1,
+                                                              "text": "Hello World!",
+                                                              "createdDate": "2023-10-01T12:00:00Z",
+                                                              "likesCount": 10,
+                                                              "commentsCount": 5,
+                                                              "repostsCount": 2
+                                                            }
+                                                          ]
                                                         }
-                                                      ]
-                                                    }
-                                                """)
+                                                    """)
                             )
                     ),
                     @ApiResponse(

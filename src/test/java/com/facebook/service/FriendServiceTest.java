@@ -210,10 +210,14 @@ public class FriendServiceTest {
 
         List<User> topUsers = List.of(otherUser1, otherUser2);
 
-        UserShortDto dto1 = new UserShortDto(otherUser1.getId(), otherUser1.getFirstName(), otherUser1.getLastName(), null);
-        UserShortDto dto2 = new UserShortDto(otherUser2.getId(), otherUser2.getFirstName(), otherUser2.getLastName(), null);
+        UserShortDto dto1 = new UserShortDto(otherUser1.getId(), otherUser1.getFirstName(), otherUser1.getLastName(), null, null);
+        UserShortDto dto2 = new UserShortDto(otherUser2.getId(), otherUser2.getFirstName(), otherUser2.getLastName(), null, null);
 
         when(userRepository.findTop40ByIdNotOrderByCreatedDateDesc(1L)).thenReturn(topUsers);
+        when(friendRepository.findByUserIdAndFriendId(1L, 2L)).thenReturn(Optional.empty());
+        when(friendRepository.findByUserIdAndFriendId(2L, 1L)).thenReturn(Optional.empty());
+        when(friendRepository.findByUserIdAndFriendId(1L, 3L)).thenReturn(Optional.empty());
+        when(friendRepository.findByUserIdAndFriendId(3L, 1L)).thenReturn(Optional.empty());
         when(modelMapper.map(otherUser1, UserShortDto.class)).thenReturn(dto1);
         when(modelMapper.map(otherUser2, UserShortDto.class)).thenReturn(dto2);
 
@@ -238,7 +242,7 @@ public class FriendServiceTest {
         when(friendRepository.findByStatusAndUserId(FriendStatus.ACCEPTED, 1L))
                 .thenReturn(List.of(friend));
 
-        UserShortDto friendDto = new UserShortDto(2L, "Friend", "User", null);
+        UserShortDto friendDto = new UserShortDto(2L, "Friend", "User", null, null);
         when(modelMapper.map(friendUser, UserShortDto.class)).thenReturn(friendDto);
 
         User foaf1 = new User();
@@ -262,8 +266,13 @@ public class FriendServiceTest {
         when(friendRepository.findByStatusAndUserId(FriendStatus.ACCEPTED, 2L))
                 .thenReturn(List.of(friendOfFriend1, friendOfFriend2));
 
-        UserShortDto foafDto1 = new UserShortDto(3L, "FriendOf", "Friend1", null);
-        UserShortDto foafDto2 = new UserShortDto(4L, "FriendOf", "Friend2", null);
+        UserShortDto foafDto1 = new UserShortDto(3L, "FriendOf", "Friend1", null, null);
+        UserShortDto foafDto2 = new UserShortDto(4L, "FriendOf", "Friend2", null, null);
+
+        when(friendRepository.findByUserIdAndFriendId(1L, 3L)).thenReturn(Optional.empty());
+        when(friendRepository.findByUserIdAndFriendId(3L, 1L)).thenReturn(Optional.empty());
+        when(friendRepository.findByUserIdAndFriendId(1L, 4L)).thenReturn(Optional.empty());
+        when(friendRepository.findByUserIdAndFriendId(4L, 1L)).thenReturn(Optional.empty());
 
         when(modelMapper.map(foaf1, UserShortDto.class)).thenReturn(foafDto1);
         when(modelMapper.map(foaf2, UserShortDto.class)).thenReturn(foafDto2);

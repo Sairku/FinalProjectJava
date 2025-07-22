@@ -270,8 +270,8 @@ public class UserServiceTest {
         when(userRepository.findAllByIdNotOrderByCreatedDateDesc(currentUserId, pageable))
                 .thenReturn(usersPage);
 
-        UserShortDto dto1 = new UserShortDto(user1.getId(), user1.getFirstName(), user1.getLastName(), null);
-        UserShortDto dto2 = new UserShortDto(user2.getId(), user2.getFirstName(), user2.getLastName(), null);
+        UserShortDto dto1 = new UserShortDto(user1.getId(), user1.getFirstName(), user1.getLastName(), null, null);
+        UserShortDto dto2 = new UserShortDto(user2.getId(), user2.getFirstName(), user2.getLastName(), null, null);
 
         when(modelMapper.map(user1, UserShortDto.class)).thenReturn(dto1);
         when(modelMapper.map(user2, UserShortDto.class)).thenReturn(dto2);
