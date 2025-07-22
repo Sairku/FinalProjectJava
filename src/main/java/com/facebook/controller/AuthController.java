@@ -169,6 +169,8 @@ public class AuthController {
             );
         }
 
+        registerRequest.setGender(registerRequest.getGender().toUpperCase());
+
         LoginResponseDto loginResponse = authService.register(registerRequest);
 
         Authentication authentication = authenticationManager.authenticate(

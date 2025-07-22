@@ -5,19 +5,21 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class PostResponseDto {
+public class MessageResponse {
+
     private Long id;
-    private UserShortDto user;
+
+    private UserShortDto sender;
+
+    private UserShortDto receiver;
+
     private String text;
-    private List<String> images = new ArrayList<>();
+
+    private boolean isRead;
+
     private LocalDateTime createdDate;
-    private int likesCount;
-    private int commentsCount;
-    private int repostsCount;
 }

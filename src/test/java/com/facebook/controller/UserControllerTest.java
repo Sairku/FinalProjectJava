@@ -2,6 +2,7 @@ package com.facebook.controller;
 
 import com.facebook.dto.UserAuthDto;
 import com.facebook.dto.UserDetailsDto;
+import com.facebook.dto.UserShortDto;
 import com.facebook.dto.UserUpdateRequestDto;
 import com.facebook.enums.Provider;
 import com.facebook.middleware.CurrentUserArgumentResolver;
@@ -12,6 +13,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -21,6 +25,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -68,7 +73,7 @@ public class UserControllerTest {
 
         when(userService.getCurrentUserDetails(userId)).thenReturn(mockDetails);
 
-        mockMvc.perform(get("/api/users/{userId}", userId))
+        mockMvc.perform(get("/api/users/current"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("User details retrieved successfully"))
                 .andExpect(jsonPath("$.data.id").value(userId))
@@ -122,5 +127,81 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.data.lastName").value("Updated Last Name"));
 
         verify(userService, times(1)).updateUser(eq(userId), any(UserUpdateRequestDto.class));
+    }
+
+    @Test
+    void testGetAllUsersExceptCurrent() throws Exception {
+        UserShortDto user1 = new UserShortDto(2L, "Alice", "Smith", null, null);
+        UserShortDto user2 = new UserShortDto(3L, "Bob", "Jones", null, null);
+
+        Page<UserShortDto> mockPage = new PageImpl<>(
+                List.of(user1, user2),
+                PageRequest.of(0, 10),
+                2
+        );
+
+        when(userService.getAllUsersExceptCurrent(userId, 0, 10)).thenReturn(mockPage);
+
+        mockMvc.perform(get("/api/users")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Users retrieved successfully"))
+                .andExpect(jsonPath("$.data.content.length()").value(2))
+                .andExpect(jsonPath("$.data.content[0].id").value(2L))
+                .andExpect(jsonPath("$.data.content[0].firstName").value("Alice"))
+                .andExpect(jsonPath("$.data.content[1].id").value(3L))
+                .andExpect(jsonPath("$.data.content[1].firstName").value("Bob"));
+
+        verify(userService, times(1)).getAllUsersExceptCurrent(userId, 0, 10);
+    }
+
+    @Test
+    void searchUsersByFullName_returnsUsersAndOkMessage() throws Exception {
+        String query = "John Doe";
+
+        UserShortDto dto = new UserShortDto();
+        dto.setId(1L);
+        dto.setFirstName("John");
+        dto.setLastName("Doe");
+
+        List<UserShortDto> resultList = List.of(dto);
+
+        when(userService.searchUsersByFullName(query)).thenReturn(resultList);
+
+        mockMvc.perform(get("/api/users/search")
+                        .param("query", query))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.error").value(false))
+                .andExpect(jsonPath("$.message").value("The search by \"John Doe\" yielded results"))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value(1))
+                .andExpect(jsonPath("$.data[0].firstName").value("John"))
+                .andExpect(jsonPath("$.data[0].lastName").value("Doe"));
+
+        verify(userService, times(1)).searchUsersByFullName(query);
+        lenient().when(securityContext.getAuthentication()).thenReturn(authentication);
+        lenient().when(authentication.getPrincipal()).thenReturn(currentUserData);
+    }
+
+    @Test
+    void searchUsersByFullName_returnsEmptyListAndUnsuccessfulMessage() throws Exception {
+        String query = "Wrong Name";
+
+        List<UserShortDto> emptyList = List.of();
+
+        when(userService.searchUsersByFullName(query)).thenReturn(emptyList);
+
+        mockMvc.perform(get("/api/users/search")
+                        .param("query", query))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.error").value(false))
+                .andExpect(jsonPath("$.message").value("No users found for \"Wrong Name\""))
+                .andExpect(jsonPath("$.data.length()").value(0));
+
+        verify(userService, times(1)).searchUsersByFullName(query);
+
+        lenient().when(securityContext.getAuthentication()).thenReturn(authentication);
+        lenient().when(authentication.getPrincipal()).thenReturn(currentUserData);
     }
 }

@@ -1,20 +1,19 @@
 package com.facebook.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class PostCreateRequestDto {
+public class MessageCreateRequest {
+
+    @NotNull(message = "Receiver ID is required")
+    private Long receiverId;
 
     @NotBlank(message = "Text is required")
     private String text;
-
-    private List<String> images = new ArrayList<>();
 }

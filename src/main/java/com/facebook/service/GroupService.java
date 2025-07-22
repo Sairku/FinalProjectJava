@@ -1,6 +1,8 @@
 package com.facebook.service;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import com.facebook.dto.*;
 import com.facebook.enums.GroupJoinStatus;
@@ -19,8 +21,10 @@ import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -50,7 +54,9 @@ public class GroupService {
 
         groupMemberRepository.save(groupMember);
 
-        return modelMapper.map(groupSaved, GroupResponse.class);
+        GroupResponse response = modelMapper.map(groupSaved, GroupResponse.class);
+        response.setMember(true);
+        return response;
     }
 
     public GroupResponse update(Long groupId, GroupUpdateRequest updateRequest, Long userId) {
@@ -73,7 +79,9 @@ public class GroupService {
 
         groupRepository.save(group);
 
-        return modelMapper.map(group, GroupResponse.class);
+        GroupResponse response = modelMapper.map(group, GroupResponse.class);
+        response.setMember(true);
+        return response;
     }
 
 
@@ -174,8 +182,7 @@ public class GroupService {
     public List<UserShortDto> getGroupMembers(long groupId) {
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new NotFoundException("Group with id " + groupId + " not found"));
-        List<GroupMember> members = groupMemberRepository.findByGroupId(groupId)
-                .orElseThrow(() -> new NotFoundException("No members found for this group"));
+        List<GroupMember> members = groupMemberRepository.findByGroupId(groupId).orElse(new ArrayList<>());
 
         return members.stream()
                 .map(member -> modelMapper.map(member.getUser(), UserShortDto.class))
@@ -198,8 +205,20 @@ public class GroupService {
                 .orElseThrow(() -> new NotFoundException("Group isn't found"));
     }
 
-    public Page<GroupResponse> getAll(Pageable pageable) {
-        return groupRepository.findAll(pageable)
-                .map(group -> modelMapper.map(group, GroupResponse.class));
+    public Page<GroupResponse> getAll(int page, int size, long userId) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Group> groupPage = groupRepository.findAll(pageable);
+
+        List<GroupResponse> groupResponses = groupPage.stream()
+                .map(group -> modelMapper.map(group, GroupResponse.class))
+                .collect(Collectors.toList());
+
+        for (GroupResponse groupResponse : groupResponses) {
+            Optional<GroupMember> groupMember = groupMemberRepository.findByGroupIdAndUserId(groupResponse.getId(), userId);
+            groupResponse.setMember(groupMember.isPresent());
+        }
+
+        // Повертаємо нову сторінку з мутабельним списком
+        return new PageImpl<>(groupResponses, pageable, groupPage.getTotalElements());
     }
 }

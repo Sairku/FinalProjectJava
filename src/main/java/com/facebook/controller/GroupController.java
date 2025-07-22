@@ -15,9 +15,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -64,6 +67,54 @@ public class GroupController {
         GroupResponse groupResponse = groupService.create(userId, groupCreateRequest);
 
         return ResponseHandler.generateResponse(HttpStatus.CREATED, false, "Group was created", groupResponse);
+    }
+
+    @Operation(
+            summary = "Get All Groups",
+            description = "Retrieve all groups",
+            parameters = {
+                    @Parameter(name = "page", description = "Page number for pagination", required = false, example = "0"),
+                    @Parameter(name = "size", description = "Number of groups per page", required = false, example = "10")
+            },
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Groups retrieved successfully",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(type = "array", implementation = GroupResponse.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Invalid pagination parameters",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = ErrorResponseWrapper.class
+                                    )
+                            )
+                    )
+            }
+    )
+    @GetMapping
+    public ResponseEntity<?> getAllGroups(
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size,
+            @Parameter(hidden = true)
+            @CurrentUser UserAuthDto currentUser
+    ) {
+        long userId = currentUser.getId();
+
+        Page<GroupResponse> groups = groupService.getAll(page, size, userId);
+        PageResponseDto<GroupResponse> response = new PageResponseDto<>(groups);
+
+        return ResponseHandler.generateResponse(
+                HttpStatus.OK,
+                false,
+                "Groups retrieved successfully",
+                response
+        );
     }
 
     @Operation(
@@ -319,5 +370,41 @@ public class GroupController {
                 "User with Id " + request.getUserId() + " was rejected to join to the group " + id;
 
         return ResponseHandler.generateResponse(HttpStatus.OK, false, message, null);
+    }
+
+    @Operation(
+            summary = "Get Group Members",
+            description = "Retrieve all members of a group",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Group members retrieved successfully",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(type = "array", implementation = UserShortDto.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Group not found",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = NotFoundResponseWrapper.class
+                                    )
+                            )
+                    )
+            }
+    )
+    @GetMapping("/{id}/members")
+    public ResponseEntity<?> getGroupMembers(@PathVariable Long id) {
+        List<UserShortDto> response = groupService.getGroupMembers(id);
+
+        return ResponseHandler.generateResponse(
+                HttpStatus.OK,
+                false,
+                "Group members retrieved successfully",
+                response
+        );
     }
 }

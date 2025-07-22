@@ -5,6 +5,7 @@ import com.facebook.dto.*;
 import com.facebook.openapi.CommentResponseWrapper;
 import com.facebook.openapi.ErrorResponseWrapper;
 import com.facebook.openapi.NotFoundResponseWrapper;
+import com.facebook.service.CommentService;
 import com.facebook.service.PostService;
 import com.facebook.util.ResponseHandler;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,8 +27,8 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "Posts API", description = "Endpoints for post operations")
 public class PostController {
-
     private final PostService postService;
+    private final CommentService commentService;
 
     @Operation(
             summary = "Create a new post",
@@ -39,15 +40,15 @@ public class PostController {
                             content = @Content(
                                     mediaType = "application/json",
                                     schema = @Schema(type = "object", example = """
-                                        {
-                                          "error": false,
-                                          "message": "Post was created",
-                                          "data": {
-                                            "description": "Test post",
-                                            "images": ["http://image.com/test.jpg"]
-                                          }
-                                        }
-                                    """)
+                                                {
+                                                  "error": false,
+                                                  "message": "Post was created",
+                                                  "data": {
+                                                    "text": "Test post",
+                                                    "images": ["http://image.com/test.jpg"]
+                                                  }
+                                                }
+                                            """)
                             )
                     ),
                     @ApiResponse(
@@ -85,15 +86,15 @@ public class PostController {
                             content = @Content(
                                     mediaType = "application/json",
                                     schema = @Schema(type = "object", example = """
-                                        {
-                                          "error": false,
-                                          "message": "Post was updated",
-                                          "data": {
-                                            "description": "Updated description",
-                                            "images": ["http://image.com/updated.jpg"]
-                                          }
-                                        }
-                                    """)
+                                                {
+                                                  "error": false,
+                                                  "message": "Post was updated",
+                                                  "data": {
+                                                    "description": "Updated description",
+                                                    "images": ["http://image.com/updated.jpg"]
+                                                  }
+                                                }
+                                            """)
                             )
                     ),
                     @ApiResponse(
@@ -119,7 +120,7 @@ public class PostController {
     }
 
     @Operation(
-            summary = "Delete a post",
+            summary = "Delete user post or repost",
             description = "Deletes a post by ID",
             responses = {
                     @ApiResponse(
@@ -128,12 +129,12 @@ public class PostController {
                             content = @Content(
                                     mediaType = "application/json",
                                     schema = @Schema(type = "object", example = """
-                                        {
-                                          "error": false,
-                                          "message": "Post was deleted",
-                                          "data": null
-                                        }
-                                    """)
+                                                {
+                                                  "error": false,
+                                                  "message": "Post was deleted",
+                                                  "data": null
+                                                }
+                                            """)
                             )
                     ),
                     @ApiResponse(
@@ -142,19 +143,25 @@ public class PostController {
                             content = @Content(
                                     mediaType = "application/json",
                                     schema = @Schema(type = "object", example = """
-                                        {
-                                          "error": true,
-                                          "message": "Post not found",
-                                          "data": null
-                                        }
-                                    """)
+                                                {
+                                                  "error": true,
+                                                  "message": "Post not found",
+                                                  "data": null
+                                                }
+                                            """)
                             )
                     )
             }
     )
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deletePost(@PathVariable Long id) {
-        postService.deletePost(id);
+    public ResponseEntity<?> deletePost(
+            @PathVariable Long id,
+            @Parameter(hidden = true) @CurrentUser UserAuthDto currentUser
+    ) {
+        long currentUserId = currentUser.getId();
+
+        postService.deletePost(id, currentUserId);
+
         return ResponseHandler.generateResponse(HttpStatus.OK, false, "Post was deleted", null);
     }
 
@@ -168,12 +175,12 @@ public class PostController {
                             content = @Content(
                                     mediaType = "application/json",
                                     schema = @Schema(type = "object", example = """
-                                        {
-                                          "error": false,
-                                          "message": "Post liked successfully",
-                                          "data": 10
-                                        }
-                                    """)
+                                                {
+                                                  "error": false,
+                                                  "message": "Post liked successfully",
+                                                  "data": 10
+                                                }
+                                            """)
                             )
                     ),
                     @ApiResponse(
@@ -204,17 +211,21 @@ public class PostController {
     }
 
     @Operation(
-            summary = "Add a comment to a post",
-            description = "Adds a comment to a post by ID for the current user",
+            summary = "Repost a post",
+            description = "Reposts a post by ID for the current user",
             responses = {
                     @ApiResponse(
                             responseCode = "200",
-                            description = "A comment was added successfully",
+                            description = "Post reposted successfully, returning reposts count",
                             content = @Content(
                                     mediaType = "application/json",
-                                    schema = @Schema(
-                                            implementation = CommentResponseWrapper.class
-                                    )
+                                    schema = @Schema(type = "object", example = """
+                                                {
+                                                  "error": false,
+                                                  "message": "Post reposted successfully",
+                                                  "data": 5
+                                                }
+                                            """)
                             )
                     ),
                     @ApiResponse(
@@ -226,22 +237,31 @@ public class PostController {
                                             implementation = NotFoundResponseWrapper.class
                                     )
                             )
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "User cannot repost their own post or has already reposted it",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = ErrorResponseWrapper.class
+                                    )
+                            )
                     )
             }
     )
-    @PostMapping("/{id}/comments")
-    public ResponseEntity<?> commentPost(
+    @PostMapping("/{id}/repost")
+    public ResponseEntity<?> repost(
             @PathVariable Long id,
-            @RequestBody @Valid CommentRequestDto request,
             @Parameter(hidden = true) @CurrentUser UserAuthDto currentUser
     ) {
-        CommentResponseDto commentNew = postService.addComment(id, currentUser.getId(), request.getText());
+        int repostsCount = postService.repost(id, currentUser.getId());
 
         return ResponseHandler.generateResponse(
-                HttpStatus.CREATED,
+                HttpStatus.OK,
                 false,
-                "Comment added successfully",
-                commentNew
+                "Post reposted successfully",
+                repostsCount
         );
     }
 
@@ -269,11 +289,11 @@ public class PostController {
                     )
             }
     )
-    @GetMapping("/{id}/comments")
-    public ResponseEntity<?> getPostComments(
-            @PathVariable Long id
+    @GetMapping("/{postId}/comments")
+    public ResponseEntity<?> getComments(
+            @PathVariable Long postId
     ) {
-        List<CommentResponseDto> comments = postService.getComments(id);
+        List<CommentResponseDto> comments = commentService.getPostComments(postId);
 
         return ResponseHandler.generateResponse(
                 HttpStatus.OK,
@@ -284,62 +304,156 @@ public class PostController {
     }
 
     @Operation(
-            summary = "Delete a comment from a post",
-            description = "Deletes a comment from a post by ID for the current user",
-            parameters = {
-                    @Parameter(name = "id", description = "ID of the post"),
-                    @Parameter(name = "commentId", description = "ID of the comment to delete")
-            },
+            summary = "Add a comment to a post",
+            description = "Adds a comment to a post by ID for the current user",
             responses = {
                     @ApiResponse(
                             responseCode = "200",
-                            description = "Comment deleted successfully",
+                            description = "A comment was added successfully",
                             content = @Content(
                                     mediaType = "application/json",
-                                    schema = @Schema(type = "object", example = """
-                                        {
-                                          "error": false,
-                                          "message": "Comment deleted successfully",
-                                          "data": null
-                                        }
-                                    """)
+                                    schema = @Schema(
+                                            implementation = CommentResponseWrapper.class
+                                    )
                             )
                     ),
                     @ApiResponse(
                             responseCode = "404",
-                            description = "Post or comment not found",
+                            description = "Post not found",
                             content = @Content(
                                     mediaType = "application/json",
                                     schema = @Schema(
                                             implementation = NotFoundResponseWrapper.class
                                     )
                             )
-                    ),
+                    )
+            }
+    )
+    @PostMapping("/{postId}/comments")
+    public ResponseEntity<?> addComment(
+            @PathVariable Long postId,
+            @RequestBody @Valid CommentRequestDto request,
+            @Parameter(hidden = true) @CurrentUser UserAuthDto currentUser
+    ) {
+        CommentResponseDto commentNew = commentService.addComment(postId, currentUser.getId(), request.getText());
+
+        return ResponseHandler.generateResponse(
+                HttpStatus.CREATED,
+                false,
+                "Comment added successfully",
+                commentNew
+        );
+    }
+
+    @Operation(
+            summary = "Get all posts of user and friends (for Homepage)",
+            description = "Retrieves all posts of the current user and their friends",
+            responses = {
                     @ApiResponse(
-                            responseCode = "400",
-                            description = "User don't have permission to delete this comment or comment does not belong to the post",
+                            responseCode = "200",
+                            description = "Posts retrieved successfully",
                             content = @Content(
                                     mediaType = "application/json",
                                     schema = @Schema(
-                                            implementation = ErrorResponseWrapper.class
-                                    )
+                                            type = "object",
+                                            example = """
+                                                        {
+                                                          "error": false,
+                                                          "message": "User posts retrieved successfully",
+                                                          "data": [
+                                                            {
+                                                              "user": {
+                                                                    "id": 1,
+                                                                    "firstName": "John",
+                                                                    "lastName": "Doe"
+                                                                },
+                                                                "text": "Hello World!",
+                                                                "images": ["http://example.com/image.jpg"],
+                                                                "createdDate": "2023-10-01T12:00:00Z",
+                                                                "likesCount": 10,
+                                                                "commentsCount": 5,
+                                                                "repostsCount": 2
+                                                            }
+                                                          ]
+                                                        }
+                                                    """)
                             )
                     )
             }
     )
-    @DeleteMapping("/{id}/comments/{commentId}")
-    public ResponseEntity<?> deleteComment(
-            @PathVariable Long id,
-            @PathVariable Long commentId,
+    @GetMapping()
+    public ResponseEntity<?> getAllPosts(
             @Parameter(hidden = true) @CurrentUser UserAuthDto currentUser
     ) {
-        postService.deleteComment(id, currentUser.getId(), commentId);
+        List<PostResponseDto> posts = postService.getUserAndFriendsPosts(currentUser.getId());
 
         return ResponseHandler.generateResponse(
                 HttpStatus.OK,
                 false,
-                "Comment deleted successfully",
-                null
+                "Posts retrieved successfully",
+                posts
+        );
+    }
+
+    @Operation(
+            summary = "Get all posts of user and friends (with pagination)",
+            description = "Retrieves all posts of the current user and their friends",
+            parameters = {
+                    @Parameter(name = "page", description = "Page number (default is 0)"),
+                    @Parameter(name = "size", description = "Number of users per page (default is 20)")
+            },
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Posts retrieved successfully",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            type = "object",
+                                            example = """
+                                                        {
+                                                          "error": false,
+                                                          "message": "User posts retrieved successfully",
+                                                          "data": {
+                                                            "content": [
+                                                            {
+                                                              "user": {
+                                                                    "id": 1,
+                                                                    "firstName": "John",
+                                                                    "lastName": "Doe"
+                                                                },
+                                                                "text": "Hello World!",
+                                                                "images": ["http://example.com/image.jpg"],
+                                                                "createdDate": "2023-10-01T12:00:00Z",
+                                                                "likesCount": 10,
+                                                                "commentsCount": 5,
+                                                                "repostsCount": 2
+                                                            }
+                                                          ],
+                                                            "totalElements": 1,
+                                                            "totalPages": 1,
+                                                            "size": 10,
+                                                            "number": 0
+                                                          }
+                                                        }
+                                                    """)
+                            )
+                    )
+            }
+    )
+    @GetMapping("/pagination")
+    public ResponseEntity<?> getAllPostsPagination(
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size,
+            @Parameter(hidden = true) @CurrentUser UserAuthDto currentUser
+    ) {
+        PageResponseDto<PostResponseDto> posts = postService.getUserAndFriendsPosts(currentUser.getId(), page, size);
+
+        return ResponseHandler.generateResponse(
+                HttpStatus.OK,
+                false,
+                "Posts retrieved successfully",
+                posts
         );
     }
 }

@@ -1,10 +1,10 @@
 package com.facebook.dto;
 
-import com.facebook.model.AbstractEntity;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Date;
 import java.util.Objects;
 
 @Data
@@ -14,6 +14,8 @@ public class UserShortDto {
     private Long id;
     private String firstName;
     private String lastName;
+    private String avatarUrl;
+    private Date birthdate = null;
 
     @Override
     public boolean equals(Object obj) {
