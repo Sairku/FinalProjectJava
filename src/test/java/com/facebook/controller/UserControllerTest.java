@@ -131,8 +131,8 @@ public class UserControllerTest {
 
     @Test
     void testGetAllUsersExceptCurrent() throws Exception {
-        UserShortDto user1 = new UserShortDto(2L, "Alice", "Smith", null);
-        UserShortDto user2 = new UserShortDto(3L, "Bob", "Jones", null);
+        UserShortDto user1 = new UserShortDto(2L, "Alice", "Smith", null, null);
+        UserShortDto user2 = new UserShortDto(3L, "Bob", "Jones", null, null);
 
         Page<UserShortDto> mockPage = new PageImpl<>(
                 List.of(user1, user2),

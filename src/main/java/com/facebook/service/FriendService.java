@@ -54,21 +54,23 @@ public class FriendService {
                 .toList();
     }
 
+    private List<UserShortDto> filterRecommendedFriends(List<UserShortDto> recommendedFriends, Long userId) {
+        return recommendedFriends.stream()
+                .filter(friend -> !(friendRepository.findByUserIdAndFriendId(userId, friend.getId()).isPresent() ||
+                        friendRepository.findByUserIdAndFriendId(friend.getId(), userId).isPresent())) // Exclude the current user
+                .toList();
+    }
+
     public List<UserShortDto> getRecommendedFriends(Long userId) {
         List<UserShortDto> currentUserFriends = getAllFriendUsers(userId);
 
         if (currentUserFriends.isEmpty()) {
-//            List<User> allUsers = userRepository.findAllByIdNot(userId);
-//            Collections.shuffle(allUsers);
-//
-//            return allUsers.stream()
-//                    .limit(40)
-//                    .map(user -> modelMapper.map(user, UserShortDto.class))
-//                    .toList();
             List<User> topUsers = userRepository.findTop40ByIdNotOrderByCreatedDateDesc(userId);
-            return topUsers.stream()
+            List<UserShortDto> topUsersShort = topUsers.stream()
                     .map(user -> modelMapper.map(user, UserShortDto.class))
                     .toList();
+
+            return filterRecommendedFriends(topUsersShort, userId);
         }
 
         List<UserShortDto> result = new ArrayList<>();
@@ -89,7 +91,16 @@ public class FriendService {
             }
         }
 
-        return result;
+        if (result.size() < 40) {
+            List<User> topUsers = userRepository.findTop40ByIdNotOrderByCreatedDateDesc(userId);
+            List<UserShortDto> topUsersShort = topUsers.stream()
+                    .map(user -> modelMapper.map(user, UserShortDto.class))
+                    .toList();
+
+            result.addAll(topUsersShort);
+        }
+
+        return filterRecommendedFriends(result, userId);
     }
 
     public void addFriendRequest(Long userId, Long friendId) {

@@ -5,6 +5,9 @@ import com.facebook.exception.NotFoundException;
 import com.facebook.model.*;
 import com.facebook.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -56,7 +59,13 @@ public class PostService {
         }
 
 
-        UserShortDto userDTO = new UserShortDto(user.getId(), user.getFirstName(), user.getLastName(), user.getAvatarUrl());
+        UserShortDto userDTO = new UserShortDto(
+                user.getId(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getAvatarUrl(),
+                user.getBirthdate()
+        );
         List<String> images = savedPost.getImages().stream()
                 .map(PostImage::getUrl)
                 .toList();
@@ -91,7 +100,13 @@ public class PostService {
         Post updatedPost = postRepository.save(post);
 
         User user = updatedPost.getUser();
-        UserShortDto userDTO = new UserShortDto(user.getId(), user.getFirstName(), user.getLastName(), user.getAvatarUrl());
+        UserShortDto userDTO = new UserShortDto(
+                user.getId(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getAvatarUrl(),
+                user.getBirthdate()
+        );
         List<String> images = updatedPost.getImages().stream()
                 .map(PostImage::getUrl)
                 .toList();
@@ -198,7 +213,13 @@ public class PostService {
 
                     return new PostResponseDto(
                             post.getId(),
-                            new UserShortDto(user.getId(), user.getFirstName(), user.getLastName(), user.getAvatarUrl()),
+                            new UserShortDto(
+                                    user.getId(),
+                                    user.getFirstName(),
+                                    user.getLastName(),
+                                    user.getAvatarUrl(),
+                                    user.getBirthdate()
+                            ),
                             post.getText(),
                             images,
                             post.getCreatedDate(),
@@ -232,7 +253,13 @@ public class PostService {
 
                     return new PostResponseDto(
                             post.getId(),
-                            new UserShortDto(user.getId(), user.getFirstName(), user.getLastName(), user.getAvatarUrl()),
+                            new UserShortDto(
+                                    user.getId(),
+                                    user.getFirstName(),
+                                    user.getLastName(),
+                                    user.getAvatarUrl(),
+                                    user.getBirthdate()
+                            ),
                             post.getText(),
                             images,
                             post.getCreatedDate(),
@@ -242,5 +269,50 @@ public class PostService {
                     );
                 })
                 .toList();
+    }
+
+    public PageResponseDto<PostResponseDto> getUserAndFriendsPosts(long userId, int page, int size) {
+        int offset = page * size;
+
+        List<Post> posts = postRepository.getCombinedPosts(userId, size, offset);
+        long totalElements = postRepository.countCombinedPosts(userId);
+        int totalPages = (int) Math.ceil((double) totalElements / size);
+        boolean last = page >= totalPages - 1;
+
+        List<PostResponseDto> postsResponse = posts.stream()
+                .map(post -> {
+                    User user = post.getUser();
+                    List<String> images = post.getImages().stream()
+                            .map(PostImage::getUrl)
+                            .toList();
+
+                    return new PostResponseDto(
+                            post.getId(),
+                            new UserShortDto(
+                                    user.getId(),
+                                    user.getFirstName(),
+                                    user.getLastName(),
+                                    user.getAvatarUrl(),
+                                    user.getBirthdate()
+                            ),
+                            post.getText(),
+                            images,
+                            post.getCreatedDate(),
+                            post.getLikes().size(),
+                            post.getComments().size(),
+                            post.getReposts().size()
+                    );
+                })
+                .toList();
+
+        PageResponseDto<PostResponseDto> response = new PageResponseDto<>();
+        response.setContent(postsResponse);
+        response.setNumber(page);
+        response.setSize(size);
+        response.setTotalElements(totalElements);
+        response.setTotalPages(totalPages);
+        response.setLast(last);
+
+        return response;
     }
 }
