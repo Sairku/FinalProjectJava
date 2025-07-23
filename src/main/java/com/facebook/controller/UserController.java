@@ -230,61 +230,6 @@ public class UserController {
     }
 
     @Operation(
-            summary = "Get user posts",
-            description = "Retrieve all posts made by certain user",
-            responses = {
-                    @ApiResponse(
-                            responseCode = "200",
-                            description = "User posts retrieved successfully",
-                            content = @Content(
-                                    mediaType = "application/json",
-                                    schema = @Schema(
-                                            type = "object",
-                                            example = """
-                                                        {
-                                                          "error": false,
-                                                          "message": "User posts retrieved successfully",
-                                                          "data": [
-                                                            {
-                                                              "id": 1,
-                                                              "text": "Hello World!",
-                                                              "createdDate": "2023-10-01T12:00:00Z",
-                                                              "likesCount": 10,
-                                                              "commentsCount": 5,
-                                                              "repostsCount": 2
-                                                            }
-                                                          ]
-                                                        }
-                                                    """)
-                            )
-                    ),
-                    @ApiResponse(
-                            responseCode = "404",
-                            description = "User not found",
-                            content = @Content(
-                                    mediaType = "application/json",
-                                    schema = @Schema(
-                                            implementation = NotFoundResponseWrapper.class
-                                    )
-                            )
-                    )
-            }
-    )
-    @GetMapping("/{userId}/posts")
-    public ResponseEntity<?> getUserPosts(
-            @PathVariable long userId
-    ) {
-        List<PostResponseDto> posts = postService.getUserPosts(userId);
-
-        return ResponseHandler.generateResponse(
-                HttpStatus.OK,
-                false,
-                "User posts retrieved successfully",
-                posts
-        );
-    }
-
-    @Operation(
             summary = "Search users by full name",
             description = "Returns a list of users whose first or last name contains the provided query. Supports both one-word and two-word searches.",
             responses = {
@@ -296,18 +241,18 @@ public class UserController {
                                     schema = @Schema(
                                             type = "object",
                                             example = """
-                            {
-                              "error": false,
-                              "message": "The search by \"John\" yielded results",
-                              "data": [
-                                {
-                                  "id": 1,
-                                  "firstName": "John",
-                                  "lastName": "Doe"
-                                }
-                              ]
-                            }
-                        """
+                                                        {
+                                                          "error": false,
+                                                          "message": "The search by \"John\" yielded results",
+                                                          "data": [
+                                                            {
+                                                              "id": 1,
+                                                              "firstName": "John",
+                                                              "lastName": "Doe"
+                                                            }
+                                                          ]
+                                                        }
+                                                    """
                                     )
                             )
                     )

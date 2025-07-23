@@ -7,6 +7,7 @@ public class AppConstants {
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/swagger-resources/**",
-            "/docs/**"
+            "/docs/**",
+            "/h2-console/**"
     };
 }
