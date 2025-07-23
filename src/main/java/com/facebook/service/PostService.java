@@ -232,14 +232,6 @@ public class PostService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found with ID: " + userId));
 
-        UserShortDto userShort = new UserShortDto(
-                user.getId(),
-                user.getFirstName(),
-                user.getLastName(),
-                user.getAvatarUrl(),
-                user.getBirthdate()
-        );
-
         int offset = page * size;
 
         List<Post> posts = postRepository.getCombinedPosts(userId, size, offset);
@@ -249,13 +241,20 @@ public class PostService {
 
         List<PostResponseDto> postsResponse = posts.stream()
                 .map(post -> {
+                    User userPost = post.getUser();
                     List<String> images = post.getImages().stream()
                             .map(PostImage::getUrl)
                             .toList();
 
                     return new PostResponseDto(
                             post.getId(),
-                            userShort,
+                            new UserShortDto(
+                                    userPost.getId(),
+                                    userPost.getFirstName(),
+                                    userPost.getLastName(),
+                                    userPost.getAvatarUrl(),
+                                    userPost.getBirthdate()
+                            ),
                             post.getText(),
                             images,
                             post.getCreatedDate(),
