@@ -42,4 +42,38 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             @Param("limit") int limit,
             @Param("offset") int offset
     );
+
+    @Query(value = """
+    (SELECT p.*
+     FROM posts p
+     WHERE p.user_id = :userId)
+    UNION ALL
+    (SELECT p.*
+     FROM posts p
+     WHERE p.user_id IN :friendsIds)
+    ORDER BY created_at DESC
+    LIMIT :limit OFFSET :offset
+    """, nativeQuery = true)
+    List<Post> getUserAndFriendsPosts(
+            @Param("userId") Long userId,
+            @Param("friendsIds") List<Long> friendsIds,
+            @Param("limit") int limit,
+            @Param("offset") int offset
+    );
+
+    @Query(value = """
+    SELECT COUNT(*) FROM (
+        (SELECT p.id
+         FROM posts p
+         WHERE p.user_id = :userId)
+        UNION ALL
+        (SELECT p.id
+         FROM posts p
+         WHERE p.user_id IN :friendsIds)
+    ) AS combined_posts
+    """, nativeQuery = true)
+    long countUserAndFriendsPosts(
+            @Param("userId") Long userId,
+            @Param("friendsIds") List<Long> friendsIds
+    );
 }

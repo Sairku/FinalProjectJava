@@ -233,21 +233,23 @@ public class PostControllerTest {
     void testGetAllPosts() throws Exception {
         mockMvc = buildMockMvc(true);
 
-        List<PostResponseDto> posts = new ArrayList<>();
+        PageResponseDto<PostResponseDto> posts = new PageResponseDto<>();
         PostResponseDto post = new PostResponseDto();
 
         post.setId(1L);
         post.setText("Test post");
         post.setCreatedDate(LocalDateTime.now());
         post.setUser(new UserShortDto(userId, "John", "Doe", null, null));
-        posts.add(post);
+        posts.setContent(List.of(post));
 
-        when(postService.getUserAndFriendsPosts(userId)).thenReturn(posts);
+        when(postService.getUserPosts(userId, 0, 10)).thenReturn(posts);
 
-        mockMvc.perform(get("/api/posts"))
+        mockMvc.perform(get("/api/posts/my-posts")
+                        .param("page", "0")
+                        .param("size", "10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Posts retrieved successfully"))
                 .andExpect(jsonPath("$.error").value(false))
-                .andExpect(jsonPath("$.data[0].text").value("Test post"));
+                .andExpect(jsonPath("$.data.content[0].text").value("Test post"));
     }
 }

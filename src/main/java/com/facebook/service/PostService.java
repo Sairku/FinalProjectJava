@@ -5,9 +5,6 @@ import com.facebook.exception.NotFoundException;
 import com.facebook.model.*;
 import com.facebook.repository.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -231,6 +228,55 @@ public class PostService {
                 .toList();
     }
 
+    public PageResponseDto<PostResponseDto> getUserPosts(long userId, int page, int size) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found with ID: " + userId));
+
+        UserShortDto userShort = new UserShortDto(
+                user.getId(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getAvatarUrl(),
+                user.getBirthdate()
+        );
+
+        int offset = page * size;
+
+        List<Post> posts = postRepository.getCombinedPosts(userId, size, offset);
+        long totalElements = postRepository.countCombinedPosts(userId);
+        int totalPages = (int) Math.ceil((double) totalElements / size);
+        boolean last = page >= totalPages - 1;
+
+        List<PostResponseDto> postsResponse = posts.stream()
+                .map(post -> {
+                    List<String> images = post.getImages().stream()
+                            .map(PostImage::getUrl)
+                            .toList();
+
+                    return new PostResponseDto(
+                            post.getId(),
+                            userShort,
+                            post.getText(),
+                            images,
+                            post.getCreatedDate(),
+                            post.getLikes().size(),
+                            post.getComments().size(),
+                            post.getReposts().size()
+                    );
+                })
+                .toList();
+
+        PageResponseDto<PostResponseDto> response = new PageResponseDto<>();
+        response.setContent(postsResponse);
+        response.setNumber(page);
+        response.setSize(size);
+        response.setTotalElements(totalElements);
+        response.setTotalPages(totalPages);
+        response.setLast(last);
+
+        return response;
+    }
+
     public List<PostResponseDto> getUserAndFriendsPosts(long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found with ID: " + userId));
@@ -247,6 +293,8 @@ public class PostService {
         return posts.stream()
                 .sorted((p1, p2) -> p2.getCreatedDate().compareTo(p1.getCreatedDate()))
                 .map(post -> {
+                    User userPost  = post.getUser();
+
                     List<String> images = post.getImages().stream()
                             .map(PostImage::getUrl)
                             .toList();
@@ -254,11 +302,11 @@ public class PostService {
                     return new PostResponseDto(
                             post.getId(),
                             new UserShortDto(
-                                    user.getId(),
-                                    user.getFirstName(),
-                                    user.getLastName(),
-                                    user.getAvatarUrl(),
-                                    user.getBirthdate()
+                                    userPost.getId(),
+                                    userPost.getFirstName(),
+                                    userPost.getLastName(),
+                                    userPost.getAvatarUrl(),
+                                    userPost.getBirthdate()
                             ),
                             post.getText(),
                             images,
@@ -272,16 +320,26 @@ public class PostService {
     }
 
     public PageResponseDto<PostResponseDto> getUserAndFriendsPosts(long userId, int page, int size) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found with ID: " + userId));
+
+        List<UserShortDto> friends = friendService.getAllFriendUsers(userId);
+        List<Long> friendsIds = friends.stream().map(UserShortDto::getId).toList();
+
+        if (friendsIds.isEmpty()) {
+            friendsIds = List.of(-1L); // ID, якого точно немає в базі
+        }
+
         int offset = page * size;
 
-        List<Post> posts = postRepository.getCombinedPosts(userId, size, offset);
-        long totalElements = postRepository.countCombinedPosts(userId);
+        List<Post> posts = postRepository.getUserAndFriendsPosts(userId, friendsIds, size, offset);
+        long totalElements = postRepository.countUserAndFriendsPosts(userId, friendsIds);
         int totalPages = (int) Math.ceil((double) totalElements / size);
         boolean last = page >= totalPages - 1;
 
         List<PostResponseDto> postsResponse = posts.stream()
                 .map(post -> {
-                    User user = post.getUser();
+                    User postUser = post.getUser();
                     List<String> images = post.getImages().stream()
                             .map(PostImage::getUrl)
                             .toList();
@@ -289,11 +347,11 @@ public class PostService {
                     return new PostResponseDto(
                             post.getId(),
                             new UserShortDto(
-                                    user.getId(),
-                                    user.getFirstName(),
-                                    user.getLastName(),
-                                    user.getAvatarUrl(),
-                                    user.getBirthdate()
+                                    postUser.getId(),
+                                    postUser.getFirstName(),
+                                    postUser.getLastName(),
+                                    postUser.getAvatarUrl(),
+                                    postUser.getBirthdate()
                             ),
                             post.getText(),
                             images,

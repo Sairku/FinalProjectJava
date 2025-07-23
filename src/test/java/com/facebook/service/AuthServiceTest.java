@@ -3,6 +3,7 @@ package com.facebook.service;
 import com.facebook.dto.GoogleRequestDto;
 import com.facebook.dto.LoginResponseDto;
 import com.facebook.dto.RegisterRequestDto;
+import com.facebook.enums.Gender;
 import com.facebook.enums.Provider;
 import com.facebook.exception.NotFoundException;
 import com.facebook.model.User;
@@ -85,9 +86,14 @@ public class AuthServiceTest {
 
     @Test
     void testRegisterGoogleUser() {
-        when(modelMapper.map(googleRequestDto, User.class)).thenReturn(user);
+        googleRequestDto.setPassword("googlePassword");
+
+        user.setEmail(googleRequestDto.getEmail());
+        user.setPassword(passwordEncoder.encode("googlePassword"));
+        user.setGender(Gender.CUSTOM);
         user.setProvider(Provider.GOOGLE);
-        when(userRepository.save(user)).thenReturn(user);
+
+        when(userRepository.save(any(User.class))).thenReturn(user);
 
         LoginResponseDto result = authService.registerGoogleUser(googleRequestDto);
 
