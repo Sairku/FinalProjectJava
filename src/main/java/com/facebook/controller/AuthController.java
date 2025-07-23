@@ -128,7 +128,7 @@ public class AuthController {
                     log.info(message);
 
                     return ResponseHandler.generateResponse(
-                            HttpStatus.UNAUTHORIZED,
+                            HttpStatus.FORBIDDEN,
                             true,
                             message,
                             null
@@ -317,7 +317,7 @@ public class AuthController {
                             )
                     ),
                     @ApiResponse(
-                            responseCode = "401",
+                            responseCode = "403",
                             description = "User registered via Google cannot reset password",
                             content = @Content(
                                     mediaType = "application/json",
@@ -350,7 +350,7 @@ public class AuthController {
             log.info(message);
 
             return ResponseHandler.generateResponse(
-                    HttpStatus.UNAUTHORIZED,
+                    HttpStatus.FORBIDDEN,
                     true,
                     message,
                     null
