@@ -241,18 +241,18 @@ public class UserController {
                                     schema = @Schema(
                                             type = "object",
                                             example = """
-                            {
-                              "error": false,
-                              "message": "The search by \"John\" yielded results",
-                              "data": [
-                                {
-                                  "id": 1,
-                                  "firstName": "John",
-                                  "lastName": "Doe"
-                                }
-                              ]
-                            }
-                        """
+                                                        {
+                                                          "error": false,
+                                                          "message": "The search by \"John\" yielded results",
+                                                          "data": [
+                                                            {
+                                                              "id": 1,
+                                                              "firstName": "John",
+                                                              "lastName": "Doe"
+                                                            }
+                                                          ]
+                                                        }
+                                                    """
                                     )
                             )
                     )
