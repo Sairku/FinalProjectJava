@@ -151,7 +151,6 @@ public class FriendController {
                                                     @CurrentUser UserAuthDto currentUser) {
         Long userId = currentUser.getId();
 
-
         if (Objects.equals(userId, friendId)) {
             return ResponseHandler.generateResponse(
                     HttpStatus.BAD_REQUEST,

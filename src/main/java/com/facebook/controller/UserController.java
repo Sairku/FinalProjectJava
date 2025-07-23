@@ -230,12 +230,12 @@ public class UserController {
     }
 
     @Operation(
-            summary = "Get user posts",
-            description = "Retrieve all posts made by certain user",
+            summary = "Search users by full name",
+            description = "Returns a list of users whose first or last name contains the provided query. Supports both one-word and two-word searches.",
             responses = {
                     @ApiResponse(
                             responseCode = "200",
-                            description = "User posts retrieved successfully",
+                            description = "Search results returned successfully",
                             content = @Content(
                                     mediaType = "application/json",
                                     schema = @Schema(
@@ -243,47 +243,21 @@ public class UserController {
                                             example = """
                                                         {
                                                           "error": false,
-                                                          "message": "User posts retrieved successfully",
+                                                          "message": "The search by \"John\" yielded results",
                                                           "data": [
                                                             {
                                                               "id": 1,
-                                                              "text": "Hello World!",
-                                                              "createdDate": "2023-10-01T12:00:00Z",
-                                                              "likesCount": 10,
-                                                              "commentsCount": 5,
-                                                              "repostsCount": 2
+                                                              "firstName": "John",
+                                                              "lastName": "Doe"
                                                             }
                                                           ]
                                                         }
-                                                    """)
-                            )
-                    ),
-                    @ApiResponse(
-                            responseCode = "404",
-                            description = "User not found",
-                            content = @Content(
-                                    mediaType = "application/json",
-                                    schema = @Schema(
-                                            implementation = NotFoundResponseWrapper.class
+                                                    """
                                     )
                             )
                     )
             }
     )
-    @GetMapping("/{userId}/posts")
-    public ResponseEntity<?> getUserPosts(
-            @PathVariable long userId
-    ) {
-        List<PostResponseDto> posts = postService.getUserPosts(userId);
-
-        return ResponseHandler.generateResponse(
-                HttpStatus.OK,
-                false,
-                "User posts retrieved successfully",
-                posts
-        );
-    }
-
     @GetMapping("/search")
     public ResponseEntity<?> searchUsersByFullName(@RequestParam String query) {
         List<UserShortDto> maybeUsers = userService.searchUsersByFullName(query);

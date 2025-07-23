@@ -27,6 +27,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -43,6 +44,7 @@ public class AuthController {
     private final VerificationTokenService verificationTokenService;
     private final EmailService emailService;
     private final AuthenticationManager authenticationManager;
+    private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final GoogleTokenVerifier googleTokenVerifier;
 
@@ -72,12 +74,23 @@ public class AuthController {
                                             implementation = ErrorResponseWrapper.class
                                     )
                             )
+                    ),
+                    @ApiResponse(
+                            responseCode = "403",
+                            description = "User registered via Standard Authentication cannot login with Google",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = ErrorResponseWrapper.class
+                                    )
+                            )
                     )
             }
     )
     @PostMapping("/google")
     public ResponseEntity<?> googleLogin(@RequestBody @Valid GoogleRequestDto googleRequestDto) {
         LoginResponseDto loginResponse;
+        String GOOGLE_USER_PASSWORD = "google_user_password";
 
         try {
             GoogleIdToken.Payload payload = googleTokenVerifier.verify(googleRequestDto.getIdToken());
@@ -97,13 +110,30 @@ public class AuthController {
             if (!authService.userByEmailExists(email)) {
                 String firstName = (String) payload.get("given_name");
                 String lastName = (String) payload.get("family_name");
+                String avatarUrl = (String) payload.get("picture");
 
+                googleRequestDto.setEmail(email);
+                googleRequestDto.setPassword(GOOGLE_USER_PASSWORD);
                 googleRequestDto.setFirstName(firstName);
                 googleRequestDto.setLastName(lastName);
+                googleRequestDto.setAvatarUrl(avatarUrl);
 
                 loginResponse = authService.registerGoogleUser(googleRequestDto);
             } else {
                 UserAuthDto userDetails = userDetailsService.loadUserByEmail(email);
+
+                if (!userDetails.getProvider().equals(Provider.GOOGLE)) {
+                    String message = "User with email: " + userDetails.getUsername() + " can't login with Google. User registered via Standard Authentication";
+
+                    log.info(message);
+
+                    return ResponseHandler.generateResponse(
+                            HttpStatus.FORBIDDEN,
+                            true,
+                            message,
+                            null
+                    );
+                }
 
                 loginResponse = new LoginResponseDto();
                 loginResponse.setUserId(userDetails.getId());
@@ -111,7 +141,10 @@ public class AuthController {
             }
 
             Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(email, null)
+                    new UsernamePasswordAuthenticationToken(
+                            email,
+                            GOOGLE_USER_PASSWORD
+                    )
             );
             String jwtToken = jwtUtil.generateToken(email);
 
@@ -282,12 +315,48 @@ public class AuthController {
                                             implementation = ErrorResponseWrapper.class
                                     )
                             )
+                    ),
+                    @ApiResponse(
+                            responseCode = "403",
+                            description = "User registered via Google cannot reset password",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = ErrorResponseWrapper.class
+                                    )
+                            )
                     )
             }
     )
     @PostMapping("/request-reset-password")
     public ResponseEntity<?> requestPasswordReset(@RequestBody @Valid PasswordResetRequestDto passwordResetRequest) {
         String email = passwordResetRequest.getEmail();
+        UserAuthDto userDetails = userDetailsService.loadUserByEmail(email);
+
+        if (userDetails == null) {
+            log.info("User with email: {} not found", email);
+
+            return ResponseHandler.generateResponse(
+                    HttpStatus.NOT_FOUND,
+                    true,
+                    "Email not found",
+                    null
+            );
+        }
+
+        if (userDetails.getProvider().equals(Provider.GOOGLE)) {
+            String message = "User with email: " + userDetails.getUsername() + " can't reset password. User registered via Google";
+
+            log.info(message);
+
+            return ResponseHandler.generateResponse(
+                    HttpStatus.FORBIDDEN,
+                    true,
+                    message,
+                    null
+            );
+        }
+
         String token = verificationTokenService.createPasswordResetToken(email);
 
         log.info("Password reset token created for user with email: {}", email);

@@ -3,7 +3,9 @@ package com.facebook.controller;
 import com.facebook.config.GlobalExceptionHandler;
 import com.facebook.dto.*;
 import com.facebook.enums.Gender;
+import com.facebook.enums.Provider;
 import com.facebook.service.AuthService;
+import com.facebook.service.CustomUserDetailsService;
 import com.facebook.service.EmailService;
 import com.facebook.service.VerificationTokenService;
 import com.facebook.util.JwtUtil;
@@ -24,6 +26,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.GregorianCalendar;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -43,6 +46,9 @@ class AuthControllerTest {
 
     @Mock
     private VerificationTokenService verificationTokenService;
+
+    @Mock
+    private CustomUserDetailsService userDetailsService;
 
     @Mock
     private AuthenticationManager authenticationManager;
@@ -121,7 +127,15 @@ class AuthControllerTest {
         String email = "test@example.com";
         String token = "mocked-token";
         PasswordResetRequestDto passwordResetRequest = new PasswordResetRequestDto(email);
+        UserAuthDto userAuthDto = new UserAuthDto(
+                1L,
+                email,
+                "password",
+                Provider.LOCAL,
+                Collections.emptyList()
+        );
 
+        when(userDetailsService.loadUserByEmail(email)).thenReturn(userAuthDto);
         when(verificationTokenService.createPasswordResetToken(email)).thenReturn(token);
 
         mockMvc.perform(post("/api/auth/request-reset-password")

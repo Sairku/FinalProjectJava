@@ -12,6 +12,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -445,6 +448,38 @@ class PostServiceTest {
     }
 
     @Test
+    void testGetUserPosts_pagination() {
+        long userId = 1L;
+        List<Post> posts = new ArrayList<>();
+        int page = 0;
+        int size = 2;
+
+        Post post1 = new Post();
+        post1.setId(1L);
+        post1.setText("Post 1");
+        post1.setUser(mockUser);
+        post1.setCreatedDate(LocalDateTime.now().minusHours(2));
+        posts.add(post1);
+
+        Post post2 = new Post();
+        post2.setId(2L);
+        post2.setText("Post 2");
+        post2.setUser(mockUser);
+        post2.setCreatedDate(LocalDateTime.now());
+        posts.addFirst(post2);
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(mockUser));
+        when(postRepository.getCombinedPosts(userId, size, size * page)).thenReturn(posts);
+        when(postRepository.countCombinedPosts(userId)).thenReturn((long) posts.size());
+
+        PageResponseDto<PostResponseDto> response = postService.getUserPosts(userId, page, size);
+
+        assertEquals(2, response.getSize());
+        assertEquals("Post 2", response.getContent().get(0).getText());
+        assertEquals("Post 1", response.getContent().get(1).getText());
+    }
+
+    @Test
     void testGetUserAndFriendsPosts() {
         Post post1 = new Post();
         post1.setId(1L);
@@ -483,5 +518,43 @@ class PostServiceTest {
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> postService.getUserAndFriendsPosts(userId));
+    }
+
+
+    @Test
+    void testGetUserAndFriendsPosts_pagination() {
+        int page = 0;
+        int size = 2;
+
+        Post post1 = new Post();
+        post1.setId(1L);
+        post1.setText("User Post");
+        post1.setUser(mockUser);
+        post1.setCreatedDate(LocalDateTime.now().minusHours(3));
+
+        User friend = new User();
+        friend.setId(2L);
+
+        UserShortDto friendShort = new UserShortDto();
+        friendShort.setId(friend.getId());
+
+        Post post2 = new Post();
+        post2.setId(2L);
+        post2.setText("Friend Post");
+        post2.setUser(friend);
+        post2.setCreatedDate(LocalDateTime.now());
+
+        when(userRepository.findById(mockUserId)).thenReturn(Optional.of(mockUser));
+        when(friendService.getAllFriendUsers(mockUserId)).thenReturn(List.of(friendShort));
+        when(postRepository.getUserAndFriendsPosts(mockUserId, List.of(friend.getId()), size, size * page))
+                .thenReturn(List.of(post2, post1));
+        when(postRepository.countUserAndFriendsPosts(mockUserId, List.of(friend.getId())))
+                .thenReturn(2L);
+
+        PageResponseDto<PostResponseDto> response = postService.getUserAndFriendsPosts(mockUserId, page, size);
+
+        assertEquals(2, response.getSize());
+        assertEquals("Friend Post", response.getContent().get(0).getText());
+        assertEquals("User Post", response.getContent().get(1).getText());
     }
 }

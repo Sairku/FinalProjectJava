@@ -13,8 +13,14 @@ public class GoogleRequestDto {
     private String email;
 
     @Schema(hidden = true)
+    private String password;
+
+    @Schema(hidden = true)
     private String firstName;
 
     @Schema(hidden = true)
     private String lastName;
+
+    @Schema(hidden = true)
+    private String avatarUrl;
 }
