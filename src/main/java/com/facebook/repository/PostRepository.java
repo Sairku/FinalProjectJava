@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
-    Optional<List<Post>> findAllByUserId(Long userId);
+      Optional<List<Post>> findAllByUserId(Long userId);
 
     @Query(value = """
     SELECT COUNT(*) FROM (
@@ -42,6 +42,40 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             @Param("userId") Long userId,
             @Param("limit") int limit,
             @Param("offset") int offset
+    );
+
+    @Query(value = """
+    (SELECT p.*
+     FROM posts p
+     WHERE p.user_id = :userId)
+    UNION ALL
+    (SELECT p.*
+     FROM posts p
+     WHERE p.user_id IN :friendsIds)
+    ORDER BY created_at DESC
+    LIMIT :limit OFFSET :offset
+    """, nativeQuery = true)
+    List<Post> getUserAndFriendsPosts(
+            @Param("userId") Long userId,
+            @Param("friendsIds") List<Long> friendsIds,
+            @Param("limit") int limit,
+            @Param("offset") int offset
+    );
+
+    @Query(value = """
+    SELECT COUNT(*) FROM (
+        (SELECT p.id
+         FROM posts p
+         WHERE p.user_id = :userId)
+        UNION ALL
+        (SELECT p.id
+         FROM posts p
+         WHERE p.user_id IN :friendsIds)
+    ) AS combined_posts
+    """, nativeQuery = true)
+    long countUserAndFriendsPosts(
+            @Param("userId") Long userId,
+            @Param("friendsIds") List<Long> friendsIds
     );
 
     @Query("SELECT p.user FROM Post p WHERE p.id = :postId")
