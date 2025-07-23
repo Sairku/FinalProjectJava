@@ -1,6 +1,7 @@
 package com.facebook.repository;
 
 import com.facebook.model.Post;
+import com.facebook.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -42,4 +43,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             @Param("limit") int limit,
             @Param("offset") int offset
     );
+
+    @Query("SELECT p.user FROM Post p WHERE p.id = :postId")
+    Optional<User> findUserByPostId(@Param("postId") Long postId);
 }

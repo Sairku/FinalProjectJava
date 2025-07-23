@@ -145,13 +145,16 @@ public class PostService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
+        User postUser = postRepository.findUserByPostId(postId)
+                .orElseThrow(() -> new NotFoundException("Post-creator user not found"));
+
         Like like = likeRepository.findByUserIdAndPostId(userId, postId)
                 .orElse(null);
 
+        Like likeNew = new Like();
         if (like != null) {
             post.getLikes().remove(like);
         } else {
-            Like likeNew = new Like();
             likeNew.setPost(post);
             likeNew.setUser(user);
 
@@ -159,8 +162,21 @@ public class PostService {
         }
 
         postRepository.save(post);
+        int likes = post.getLikes().size();
+        String firstLikeAtAll = "First Heartbeat";
+        String tenLikes = "Vibe Creator";
+        String hundredLikes = "Vibe Creator";
 
-        return post.getLikes().size();
+        boolean isAnotherUser = likeNew.getUser() != postUser;
+        if(likes > 0 && likeNew.getUser() != null)
+            if(likes == 1 &&  isAnotherUser && !userAchievementService.userHaveAchievement(postUser, firstLikeAtAll))
+                userAchievementService.awardAchievement(postUser, firstLikeAtAll);
+            else if (likes == 10 &&  isAnotherUser && !userAchievementService.userHaveAchievement(postUser, tenLikes))
+                userAchievementService.awardAchievement(postUser, tenLikes);
+            else if(likes == 100 && isAnotherUser && !userAchievementService.userHaveAchievement(postUser, hundredLikes))
+                userAchievementService.awardAchievement(postUser, hundredLikes);
+
+        return likes;
     }
 
     public int repost(Long postId, Long userId) {

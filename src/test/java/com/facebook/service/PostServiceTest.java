@@ -149,21 +149,44 @@ class PostServiceTest {
     }
 
     @Test
-    void testLikePost_addLike() {
+    void testLikePost_addLike_andAwardAchievement_FirstLike() {
         Post post = new Post();
         post.setId(1L);
         post.setLikes(new ArrayList<>());
-        post.setUser(mockUser);
+
+        User postUser = new User();
+        postUser.setId(100L);
 
         when(postRepository.findById(1L)).thenReturn(Optional.of(post));
-        when(userRepository.findById(2L)).thenReturn(Optional.of(new User()));
-        when(likeRepository.findByUserIdAndPostId(2L, 1L)).thenReturn(Optional.empty());
+        when(userRepository.findById(mockUserId)).thenReturn(Optional.of(mockUser));
+        when(postRepository.findUserByPostId(1L)).thenReturn(Optional.of(postUser));
+        when(likeRepository.findByUserIdAndPostId(mockUserId, 1L)).thenReturn(Optional.empty());
         when(postRepository.save(any(Post.class))).thenReturn(post);
+        when(userAchievementService.userHaveAchievement(postUser, "First Heartbeat")).thenReturn(false);
 
-        int likeCount = postService.likePost(1L, 2L);
+        int likeCount = postService.likePost(1L, mockUserId);
 
         assertEquals(1, likeCount);
-        verify(postRepository).save(any(Post.class));
+        verify(postRepository).save(post);
+        verify(userAchievementService).awardAchievement(postUser, "First Heartbeat");
+    }
+
+    @Test
+    void testLikePost_addLike_noAward_ifSameUser() {
+        Post post = new Post();
+        post.setId(1L);
+        post.setLikes(new ArrayList<>());
+
+        when(postRepository.findById(1L)).thenReturn(Optional.of(post));
+        when(userRepository.findById(mockUserId)).thenReturn(Optional.of(mockUser));
+        when(postRepository.findUserByPostId(1L)).thenReturn(Optional.of(mockUser));
+        when(likeRepository.findByUserIdAndPostId(mockUserId, 1L)).thenReturn(Optional.empty());
+        when(postRepository.save(any(Post.class))).thenReturn(post);
+
+        int likeCount = postService.likePost(1L, mockUserId);
+
+        assertEquals(1, likeCount);
+        verify(userAchievementService, never()).awardAchievement(any(), any());
     }
 
     @Test
@@ -177,16 +200,76 @@ class PostServiceTest {
 
         post.setLikes(new ArrayList<>(List.of(like)));
 
+        User postUser = new User();
+        postUser.setId(100L);
+
         when(postRepository.findById(1L)).thenReturn(Optional.of(post));
         when(userRepository.findById(mockUserId)).thenReturn(Optional.of(mockUser));
+        when(postRepository.findUserByPostId(1L)).thenReturn(Optional.of(postUser));
         when(likeRepository.findByUserIdAndPostId(mockUserId, 1L)).thenReturn(Optional.of(like));
         when(postRepository.save(any(Post.class))).thenReturn(post);
 
-        int likeCount = postService.likePost(1L, 1L);
+        int likeCount = postService.likePost(1L, mockUserId);
 
         assertEquals(0, likeCount);
-        verify(postRepository).save(any(Post.class));
+        verify(postRepository).save(post);
+        verify(userAchievementService, never()).awardAchievement(any(), any());
     }
+
+    @Test
+    void testLikePost_awardAchievement_TenLikes() {
+        Post post = new Post();
+        post.setId(1L);
+
+        List<Like> likes = new ArrayList<>();
+        for (int i = 0; i < 9; i++) {
+            likes.add(new Like());
+        }
+        post.setLikes(likes);
+
+        User postUser = new User();
+        postUser.setId(100L);
+
+        when(postRepository.findById(1L)).thenReturn(Optional.of(post));
+        when(userRepository.findById(mockUserId)).thenReturn(Optional.of(mockUser));
+        when(postRepository.findUserByPostId(1L)).thenReturn(Optional.of(postUser));
+        when(likeRepository.findByUserIdAndPostId(mockUserId, 1L)).thenReturn(Optional.empty());
+        when(postRepository.save(any(Post.class))).thenReturn(post);
+        when(userAchievementService.userHaveAchievement(postUser, "Vibe Creator")).thenReturn(false);
+
+        int likeCount = postService.likePost(1L, mockUserId);
+
+        assertEquals(10, likeCount);
+        verify(userAchievementService).awardAchievement(postUser, "Vibe Creator");
+    }
+
+    @Test
+    void testLikePost_awardAchievement_HundredLikes() {
+        Post post = new Post();
+        post.setId(1L);
+
+        List<Like> likes = new ArrayList<>();
+        for (int i = 0; i < 99; i++) {
+            likes.add(new Like());
+        }
+        post.setLikes(likes);
+
+        User postUser = new User();
+        postUser.setId(100L);
+
+        when(postRepository.findById(1L)).thenReturn(Optional.of(post));
+        when(userRepository.findById(mockUserId)).thenReturn(Optional.of(mockUser));
+        when(postRepository.findUserByPostId(1L)).thenReturn(Optional.of(postUser));
+        when(likeRepository.findByUserIdAndPostId(mockUserId, 1L)).thenReturn(Optional.empty());
+        when(postRepository.save(any(Post.class))).thenReturn(post);
+        when(userAchievementService.userHaveAchievement(postUser, "Vibe Creator")).thenReturn(false);
+
+        int likeCount = postService.likePost(1L, mockUserId);
+
+        assertEquals(100, likeCount);
+        verify(userAchievementService).awardAchievement(postUser, "Vibe Creator");
+    }
+
 
     @Test
     void testLikePost_throwNotFoundPost() {

@@ -16,7 +16,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
-
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +43,9 @@ public class CommentServiceTest {
     @Mock
     private ModelMapper modelMapper;
 
+    @Mock
+    private UserAchievementService userAchievementService;
+
     @InjectMocks
     private CommentService commentService;
 
@@ -60,13 +64,51 @@ public class CommentServiceTest {
         mockUserShort.setFirstName(mockUser.getFirstName());
         mockUserShort.setLastName(mockUser.getLastName());
     }
-
     @Test
-    void testAddComment() {
+    void testAddComment_successful_andAwardAchievement() {
         Post post = new Post();
         post.setId(1L);
-        post.setComments(new ArrayList<>());
-        post.setUser(mockUser);
+
+        List<Comment> comments = new ArrayList<>();
+        for (int i = 0; i < 24; i++) {
+            Comment c = new Comment();
+            User u = new User();
+            u.setId(1L);
+            c.setUser(u);
+            comments.add(c);
+        }
+        post.setComments(comments);
+
+        when(postRepository.findById(1L)).thenReturn(Optional.of(post));
+        when(userRepository.findById(2L)).thenReturn(Optional.of(mockUser));
+        when(modelMapper.map(mockUser, UserShortDto.class)).thenReturn(mockUserShort);
+        when(userAchievementService.userHaveAchievement(mockUser, "Comment King")).thenReturn(false);
+        when(postRepository.save(any(Post.class))).thenReturn(post);
+
+        CommentResponseDto response = commentService.addComment(1L, 2L, "Hello world");
+
+        assertNotNull(response);
+        assertEquals("Hello world", response.getText());
+        assertEquals("John", response.getUser().getFirstName());
+        verify(postRepository).save(post);
+        verify(userAchievementService).awardAchievement(mockUser, "Comment King");
+    }
+
+
+    @Test
+    void testAddComment_noAchievement_whenNot25Comments() {
+        Post post = new Post();
+        post.setId(1L);
+
+        List<Comment> comments = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            Comment c = new Comment();
+            User u = new User();
+            u.setId(1L);
+            c.setUser(u);
+            comments.add(c);
+        }
+        post.setComments(comments);
 
         when(postRepository.findById(1L)).thenReturn(Optional.of(post));
         when(userRepository.findById(2L)).thenReturn(Optional.of(mockUser));
@@ -76,10 +118,9 @@ public class CommentServiceTest {
         CommentResponseDto response = commentService.addComment(1L, 2L, "Hello world");
 
         assertNotNull(response);
-        assertEquals("Hello world", response.getText());
-        assertEquals("John", response.getUser().getFirstName());
-        verify(postRepository).save(post);
+        verify(userAchievementService, never()).awardAchievement(any(), any());
     }
+
 
     @Test
     void testAddComment_throwNotFoundPost() {
@@ -97,6 +138,14 @@ public class CommentServiceTest {
         when(userRepository.findById(999L)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> commentService.addComment(1L, 999L, "Test comment"));
+    }
+
+    private List<Comment> generateComments(int count) {
+        List<Comment> comments = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            comments.add(new Comment());
+        }
+        return comments;
     }
 
     @Test

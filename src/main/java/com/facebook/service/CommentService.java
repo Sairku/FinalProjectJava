@@ -23,6 +23,7 @@ public class CommentService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final ModelMapper modelMapper;
+    private final UserAchievementService userAchievementService;
 
     public CommentResponseDto addComment(Long postId, Long userId, String text) {
         Post post = postRepository.findById(postId)
@@ -38,6 +39,12 @@ public class CommentService {
 
         post.getComments().add(comment);
         postRepository.save(post);
+        int userComments = post.getComments().stream()
+                .filter(c -> c.getUser().getId().equals(user.getId()))
+                .toList().size();
+        String commentKing = "Comment King";
+        if(userComments == 25 && !userAchievementService.userHaveAchievement(user, commentKing))
+            userAchievementService.awardAchievement(user, commentKing);
 
         return new CommentResponseDto(
                 comment.getId(),
