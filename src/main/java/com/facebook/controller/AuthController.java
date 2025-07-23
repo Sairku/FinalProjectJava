@@ -74,6 +74,16 @@ public class AuthController {
                                             implementation = ErrorResponseWrapper.class
                                     )
                             )
+                    ),
+                    @ApiResponse(
+                            responseCode = "403",
+                            description = "User registered via Standard Authentication cannot login with Google",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = ErrorResponseWrapper.class
+                                    )
+                            )
                     )
             }
     )
@@ -305,12 +315,48 @@ public class AuthController {
                                             implementation = ErrorResponseWrapper.class
                                     )
                             )
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "User registered via Google cannot reset password",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            implementation = ErrorResponseWrapper.class
+                                    )
+                            )
                     )
             }
     )
     @PostMapping("/request-reset-password")
     public ResponseEntity<?> requestPasswordReset(@RequestBody @Valid PasswordResetRequestDto passwordResetRequest) {
         String email = passwordResetRequest.getEmail();
+        UserAuthDto userDetails = userDetailsService.loadUserByEmail(email);
+
+        if (userDetails == null) {
+            log.info("User with email: {} not found", email);
+
+            return ResponseHandler.generateResponse(
+                    HttpStatus.NOT_FOUND,
+                    true,
+                    "Email not found",
+                    null
+            );
+        }
+
+        if (userDetails.getProvider().equals(Provider.GOOGLE)) {
+            String message = "User with email: " + userDetails.getUsername() + " can't reset password. User registered via Google";
+
+            log.info(message);
+
+            return ResponseHandler.generateResponse(
+                    HttpStatus.BAD_REQUEST,
+                    true,
+                    message,
+                    null
+            );
+        }
+
         String token = verificationTokenService.createPasswordResetToken(email);
 
         log.info("Password reset token created for user with email: {}", email);
