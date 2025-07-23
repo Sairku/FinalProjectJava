@@ -284,6 +284,35 @@ public class UserController {
         );
     }
 
+    @Operation(
+            summary = "Search users by full name",
+            description = "Returns a list of users whose first or last name contains the provided query. Supports both one-word and two-word searches.",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Search results returned successfully",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            type = "object",
+                                            example = """
+                            {
+                              "error": false,
+                              "message": "The search by \"John\" yielded results",
+                              "data": [
+                                {
+                                  "id": 1,
+                                  "firstName": "John",
+                                  "lastName": "Doe"
+                                }
+                              ]
+                            }
+                        """
+                                    )
+                            )
+                    )
+            }
+    )
     @GetMapping("/search")
     public ResponseEntity<?> searchUsersByFullName(@RequestParam String query) {
         List<UserShortDto> maybeUsers = userService.searchUsersByFullName(query);
