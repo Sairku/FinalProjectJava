@@ -317,7 +317,7 @@ public class AuthController {
                             )
                     ),
                     @ApiResponse(
-                            responseCode = "400",
+                            responseCode = "401",
                             description = "User registered via Google cannot reset password",
                             content = @Content(
                                     mediaType = "application/json",
@@ -350,7 +350,7 @@ public class AuthController {
             log.info(message);
 
             return ResponseHandler.generateResponse(
-                    HttpStatus.BAD_REQUEST,
+                    HttpStatus.UNAUTHORIZED,
                     true,
                     message,
                     null
