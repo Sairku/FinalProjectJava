@@ -2,6 +2,7 @@ package com.facebook.service;
 
 import com.facebook.dto.CommentResponseDto;
 import com.facebook.dto.UserShortDto;
+import com.facebook.enums.Achievements;
 import com.facebook.exception.NotFoundException;
 import com.facebook.model.Comment;
 import com.facebook.model.Post;
@@ -23,6 +24,7 @@ public class CommentService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final ModelMapper modelMapper;
+    private final UserAchievementService userAchievementService;
 
     public CommentResponseDto addComment(Long postId, Long userId, String text) {
         Post post = postRepository.findById(postId)
@@ -38,6 +40,16 @@ public class CommentService {
 
         post.getComments().add(comment);
         postRepository.save(post);
+
+        int userComments = post.getComments().stream()
+                .filter(c -> c.getUser().getId().equals(user.getId()))
+                .toList().size();
+
+        if (userComments == 25 &&
+                !userAchievementService.userHaveAchievement(user, Achievements.COMMENT_KING.toString())
+        ) {
+            userAchievementService.awardAchievement(user, Achievements.COMMENT_KING.toString());
+        }
 
         return new CommentResponseDto(
                 comment.getId(),

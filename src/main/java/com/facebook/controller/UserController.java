@@ -241,26 +241,31 @@ public class UserController {
                                     schema = @Schema(
                                             type = "object",
                                             example = """
-                                                        {
-                                                          "error": false,
-                                                          "message": "The search by \"John\" yielded results",
-                                                          "data": [
-                                                            {
-                                                              "id": 1,
-                                                              "firstName": "John",
-                                                              "lastName": "Doe"
-                                                            }
-                                                          ]
-                                                        }
-                                                    """
+                                                {
+                                                  "error": false,
+                                                  "message": "The search by \\"John\\" yielded results",
+                                                  "data": [
+                                                    {
+                                                      "id": 1,
+                                                      "firstName": "John",
+                                                      "lastName": "Doe"
+                                                    }
+                                                  ]
+                                                }
+                                            """
                                     )
                             )
                     )
             }
     )
     @GetMapping("/search")
-    public ResponseEntity<?> searchUsersByFullName(@RequestParam String query) {
-        List<UserShortDto> maybeUsers = userService.searchUsersByFullName(query);
+    public ResponseEntity<?> searchUsersByFullName(
+            @RequestParam String query,
+            @Parameter(hidden = true)
+            @CurrentUser UserAuthDto currentUser
+    ) {
+        long currentUserId = currentUser.getId();
+        List<UserShortDto> maybeUsers = userService.searchUsersByFullName(currentUserId, query);
 
         String responseMessage = !maybeUsers.isEmpty()
                 ? String.format("The search by \"%s\" yielded results", query)

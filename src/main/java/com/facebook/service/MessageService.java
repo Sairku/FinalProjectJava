@@ -72,7 +72,7 @@ public class MessageService {
                 .orElseThrow(() -> new NotFoundException("Friend not found"));
 
         Pageable pageable = PageRequest.of(page, size);
-        Page<Message> messagesPage = messageRepository.findAllBySenderIdOrReceiverIdOrderByCreatedDateDesc(
+        Page<Message> messagesPage = messageRepository.findConversationBetweenUsers(
                 user.getId(), friend.getId(), pageable
         );
 

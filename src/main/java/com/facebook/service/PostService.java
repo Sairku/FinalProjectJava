@@ -1,6 +1,7 @@
 package com.facebook.service;
 
 import com.facebook.dto.*;
+import com.facebook.enums.Achievements;
 import com.facebook.exception.NotFoundException;
 import com.facebook.model.*;
 import com.facebook.repository.*;
@@ -145,6 +146,9 @@ public class PostService {
         Like like = likeRepository.findByUserIdAndPostId(userId, postId)
                 .orElse(null);
 
+        User postUser = post.getUser();
+        boolean isOwnPost = postUser.getId().equals(userId);
+
         if (like != null) {
             post.getLikes().remove(like);
         } else {
@@ -153,6 +157,29 @@ public class PostService {
             likeNew.setUser(user);
 
             post.getLikes().add(likeNew);
+
+            int likesCount = post.getLikes().size();
+
+            if (likesCount == 1
+                    && !isOwnPost
+                    && !userAchievementService.userHaveAchievement(postUser, Achievements.FIRST_HEARTBEAT.toString())
+            ) {
+                userAchievementService.awardAchievement(postUser, Achievements.FIRST_HEARTBEAT.toString());
+            }
+
+            if (likesCount == 10
+                    && !isOwnPost
+                    && !userAchievementService.userHaveAchievement(postUser, Achievements.VIBE_CREATOR.toString())
+            ) {
+                userAchievementService.awardAchievement(postUser, Achievements.VIBE_CREATOR.toString());
+            }
+
+            if (likesCount == 100
+                    && !isOwnPost
+                    && !userAchievementService.userHaveAchievement(postUser, Achievements.BUZZLIGHT_STAR.toString())
+            ) {
+                userAchievementService.awardAchievement(postUser, Achievements.BUZZLIGHT_STAR.toString());
+            }
         }
 
         postRepository.save(post);

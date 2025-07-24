@@ -151,16 +151,16 @@ public class UserService {
         return userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Not found user with ID: " + userId));
     }
 
-    public List<UserShortDto> searchUsersByFullName(String fullName) {
+    public List<UserShortDto> searchUsersByFullName(long currentUserId, String fullName) {
         String[] words = fullName.trim().toLowerCase().split("\\s+");
         List<User> users;
 
         if (words.length == 1) {
-            users = userRepository.searchByFullNamePrefix(words[0]).orElse(new ArrayList<>());
+            users = userRepository.searchByFullNamePrefix(currentUserId, words[0]).orElse(new ArrayList<>());
         } else if (words.length == 2) {
-            users = userRepository.searchByTwoWords(words[0], words[1]).orElse(new ArrayList<>());
+            users = userRepository.searchByTwoWords(currentUserId, words[0], words[1]).orElse(new ArrayList<>());
         } else {
-            users = userRepository.searchByFullNameContains(fullName).orElse(new ArrayList<>());
+            users = userRepository.searchByFullNameContains(currentUserId, fullName).orElse(new ArrayList<>());
         }
         return users.stream()
                 .map(user -> modelMapper.map(user, UserShortDto.class))
