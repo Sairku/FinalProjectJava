@@ -39,16 +39,30 @@ public class PostController {
                             description = "Post was created successfully",
                             content = @Content(
                                     mediaType = "application/json",
-                                    schema = @Schema(type = "object", example = """
+                                    schema = @Schema(
+                                            type = "object",
+                                            example = """
                                                 {
                                                   "error": false,
                                                   "message": "Post was created",
                                                   "data": {
+                                                    "id": 1,
+                                                    "user": {
+                                                      "id": 1,
+                                                      "firstName": "John",
+                                                      "lastName": "Doe",
+                                                      "avatarUrl": "http://example.com/avatar.jpg"
+                                                    },
                                                     "text": "Test post",
-                                                    "images": ["http://image.com/test.jpg"]
+                                                    "images": ["http://image.com/test.jpg"],
+                                                    "createdDate": "2023-10-01T12:00:00Z",
+                                                    "likesCount": 0,
+                                                    "commentsCount": 0,
+                                                    "repostsCount": 0
                                                   }
                                                 }
-                                            """)
+                                            """
+                                    )
                             )
                     ),
                     @ApiResponse(
@@ -61,10 +75,8 @@ public class PostController {
                                     )
                             )
                     )
-
             }
     )
-
     @PostMapping("/create")
     public ResponseEntity<?> createPost(
             @RequestBody @Valid PostCreateRequestDto request,
@@ -81,20 +93,34 @@ public class PostController {
             description = "Updates an existing post by ID",
             responses = {
                     @ApiResponse(
-                            responseCode = "200",
-                            description = "Post was updated successfully",
+                            responseCode = "201",
+                            description = "Post was updated",
                             content = @Content(
                                     mediaType = "application/json",
-                                    schema = @Schema(type = "object", example = """
+                                    schema = @Schema(
+                                            type = "object",
+                                            example = """
                                                 {
                                                   "error": false,
-                                                  "message": "Post was updated",
+                                                  "message": "Post was created",
                                                   "data": {
-                                                    "description": "Updated description",
-                                                    "images": ["http://image.com/updated.jpg"]
+                                                    "id": 1,
+                                                    "user": {
+                                                      "id": 1,
+                                                      "firstName": "John",
+                                                      "lastName": "Doe",
+                                                      "avatarUrl": null
+                                                    },
+                                                    "text": "Test post",
+                                                    "images": [],
+                                                    "createdDate": "2023-10-01T12:00:00Z",
+                                                    "likesCount": 10,
+                                                    "commentsCount": 5,
+                                                    "repostsCount": 2
                                                   }
                                                 }
-                                            """)
+                                            """
+                                    )
                             )
                     ),
                     @ApiResponse(
@@ -367,6 +393,7 @@ public class PostController {
                                                           "data": {
                                                             "content": [
                                                             {
+                                                              "id": 1,
                                                               "user": {
                                                                     "id": 1,
                                                                     "firstName": "John",
@@ -441,6 +468,7 @@ public class PostController {
                                                           "data": {
                                                             "content": [
                                                             {
+                                                              "id": 1,
                                                               "user": {
                                                                     "id": 1,
                                                                     "firstName": "John",
@@ -513,6 +541,7 @@ public class PostController {
                                                           "data": {
                                                             "content": [
                                                             {
+                                                              "id": 1,
                                                               "user": {
                                                                     "id": 1,
                                                                     "firstName": "John",
@@ -587,6 +616,7 @@ public class PostController {
                                                           "data": {
                                                             "content": [
                                                             {
+                                                              "id": 1,
                                                               "user": {
                                                                     "id": 1,
                                                                     "firstName": "John",

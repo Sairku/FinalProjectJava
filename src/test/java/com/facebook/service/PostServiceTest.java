@@ -173,6 +173,7 @@ class PostServiceTest {
     void testLikePost_removeLike() {
         Post post = new Post();
         post.setId(1L);
+        post.setUser(mockUser);
 
         Like like = new Like();
         like.setUser(mockUser);

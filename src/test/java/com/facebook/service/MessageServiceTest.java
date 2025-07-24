@@ -196,7 +196,7 @@ public class MessageServiceTest {
 
         Page<Message> messagesPage = new PageImpl<>(List.of(message, secondMessage));
 
-        when(messageRepository.findAllBySenderIdOrReceiverIdOrderByCreatedDateDesc(1L, 2L, PageRequest.of(page, size)))
+        when(messageRepository.findConversationBetweenUsers(1L, 2L, PageRequest.of(page, size)))
                 .thenReturn(messagesPage);
 
         Page<MessageResponse> responsePage = messageService.getMessagesWithFriend(1L, 2L, page, size);
@@ -206,7 +206,7 @@ public class MessageServiceTest {
         assertEquals("Hello", responsePage.getContent().get(0).getText());
         assertEquals("Hi back", responsePage.getContent().get(1).getText());
 
-        verify(messageRepository).findAllBySenderIdOrReceiverIdOrderByCreatedDateDesc(1L, 2L, PageRequest.of(page, size));
+        verify(messageRepository).findConversationBetweenUsers(1L, 2L, PageRequest.of(page, size));
     }
 
     @Test

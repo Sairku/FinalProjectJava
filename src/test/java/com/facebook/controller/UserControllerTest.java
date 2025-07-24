@@ -167,7 +167,7 @@ public class UserControllerTest {
 
         List<UserShortDto> resultList = List.of(dto);
 
-        when(userService.searchUsersByFullName(query)).thenReturn(resultList);
+        when(userService.searchUsersByFullName(userId, query)).thenReturn(resultList);
 
         mockMvc.perform(get("/api/users/search")
                         .param("query", query))
@@ -179,7 +179,7 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.data[0].firstName").value("John"))
                 .andExpect(jsonPath("$.data[0].lastName").value("Doe"));
 
-        verify(userService, times(1)).searchUsersByFullName(query);
+        verify(userService, times(1)).searchUsersByFullName(userId, query);
         lenient().when(securityContext.getAuthentication()).thenReturn(authentication);
         lenient().when(authentication.getPrincipal()).thenReturn(currentUserData);
     }
@@ -190,7 +190,7 @@ public class UserControllerTest {
 
         List<UserShortDto> emptyList = List.of();
 
-        when(userService.searchUsersByFullName(query)).thenReturn(emptyList);
+        when(userService.searchUsersByFullName(userId, query)).thenReturn(emptyList);
 
         mockMvc.perform(get("/api/users/search")
                         .param("query", query))
@@ -199,7 +199,7 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.message").value("No users found for \"Wrong Name\""))
                 .andExpect(jsonPath("$.data.length()").value(0));
 
-        verify(userService, times(1)).searchUsersByFullName(query);
+        verify(userService, times(1)).searchUsersByFullName(userId, query);
 
         lenient().when(securityContext.getAuthentication()).thenReturn(authentication);
         lenient().when(authentication.getPrincipal()).thenReturn(currentUserData);
